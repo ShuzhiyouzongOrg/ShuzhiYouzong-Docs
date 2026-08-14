@@ -1,0 +1,84 @@
+\chapter{背景与需求分析}
+
+\section{项目定位与建设背景}
+
+“数智游踪”面向第十五届“中国软件杯”A5“景区导览服务AI数字人”赛题，以无锡灵山胜境及拈花湾禅意小镇公开资料为知识边界，建设\textbf{游客交互端与景区管理端一体化}的智慧导览产品。2026年进入“十五五”时期，《旅游强国建设“十五五”规划》明确推动旅游业智能化、绿色化、融合化发展，并提升旅游行程规划、导游导览和沉浸式体验等全链条技术水平\upcite{mct2026tourism}；两部门提出5G与智慧旅游协同创新、打造可复制的示范场景\upcite{miit2023smarttourism}；五部门《智慧旅游创新发展行动计划》强调“上云用数赋智”和服务体验提升\upcite{mct2024actionplan}。本项目将政策导向落到\textbf{“实时导览、可信问答、个性路线、沉浸交互、运营洞察”}五类可运行能力上。
+
+系统不是单一聊天机器人，而是由本地景区知识库、可调用大模型、语音识别与合成、交互式数字人、路线推荐和运营分析共同组成的\textbf{服务闭环}。当前工程已形成Vue 3游客端与管理端、Node.js API、SQLite持久化、\textbf{44个知识分块和22个景点实体}，并以\textbf{全局国际化层与可替换数字人引擎}支撑跨语言、可持续的导览服务。
+
+\section{业务痛点与价值主张}
+
+景区旺季供需矛盾、录音设备单向传播、导览缺少情绪反馈和运营数据割裂，是赛题给出的\textbf{四类关键问题}。项目设计以\textbf{“可获得、可对话、可相信、可优化”}为价值准则，将游客体验数据反哺知识库和运营决策。
+
+\begin{table}[H]
+  \centering
+  \caption{景区导览痛点与产品响应表}\label{tab:pain-response}
+  \begin{tabularx}{\textwidth}{p{0.16\textwidth}X X p{0.16\textwidth}}
+    \toprule
+    痛点 & 传统方式局限 & 数智游踪响应 & 可验证结果 \\
+    \midrule
+    导游资源紧张 & 服务受人员数量、班次和旺季客流限制 & 数字人7×24小时在线，文本与语音双入口 & 游客可随时发起问答与讲解 \\
+    语言服务不统一 & 外籍与港澳台游客难以理解界面，局部翻译易造成操作断层 & 五语言消息目录覆盖框架与全部业务页面，顶部入口全局切换 & 导航、表单、状态和导览操作文案保持同一语言 \\
+    信息单向固定 & 录音内容无法追问，更新成本高 & 本地RAG知识库、FAQ优先和多轮上下文 & 返回答案、来源与阶段耗时 \\
+    缺少个性体验 & 相同路线和讲解难以适配兴趣、时长与体力 & 基于标签和规则评分生成路线与节点讲解 & 输出路线顺序、耗时、理由和备选 \\
+    缺少情感连接 & 设备不理解情绪，反馈形式机械 & 答案标签驱动数字人语音、口型、表情和动作 & 支持致歉、微笑、点头和引导状态 \\
+    管理决策盲区 & 问答、消费和满意度数据彼此孤立 & 融合线上会话与522条灵山行为记录 & 大屏展示趋势、画像、聚类与建议 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.95\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[core] (p1) at (0,0) {痛点识别\\供给与体验};
+    \node[core] (p2) at (3.15,0) {能力编排\\RAG与数字人};
+    \node[core] (p3) at (6.30,0) {服务触达\\问答与路线};
+    \node[core] (p4) at (9.45,0) {数据沉淀\\会话与反馈};
+    \node[coregold] (p5) at (12.60,0) {运营优化\\知识与决策};
+    \draw[flow] (p1.east) -- (p2.west);
+    \draw[flow] (p2.east) -- (p3.west);
+    \draw[flow] (p3.east) -- (p4.west);
+    \draw[flowgold] (p4.east) -- (p5.west);
+    \node[side] (visitor) at (3.15,2.05) {游客侧\\语音/文本/偏好};
+    \node[side] (manager) at (9.45,-2.05) {管理侧\\知识/质量/运营};
+    \draw[curved] (visitor.south west) to[out=235,in=90] (p1.north);
+    \draw[curved] (visitor.south) to[out=270,in=90] (p2.north);
+    \draw[curved] (p3.south) to[out=270,in=150] (manager.north west);
+    \draw[curved] (manager.north east) to[out=30,in=270] (p5.south);
+    \draw[curved,dashed] (p5.north) .. controls (13.10,4.00) and (-1.65,4.00) .. (p1.west);
+  \end{tikzpicture}}
+  \caption{景区导览价值闭环图}\label{fig:value-loop}
+\end{figure}
+
+\section{赛题侧重点分析}
+
+评分结构决定总体设计文档的论证顺序：先证明\textbf{功能覆盖和系统闭环}，再证明\textbf{数字人与知识库的技术深度}，随后以测试数据支撑\textbf{体验与行业价值}。项目与赛题的对应关系见表\ref{tab:topic-mapping}。
+
+\begin{table}[H]
+  \centering
+  \caption{赛题评分侧重点与设计响应表}\label{tab:topic-mapping}
+  \begin{tabularx}{\textwidth}{p{0.18\textwidth}p{0.11\textwidth}X X}
+    \toprule
+    评分维度 & 占比 & 赛题关注点 & 本文重点证据 \\
+    \midrule
+    功能完整度 & 40\% & 多模态交互、智能问答、管理后台完整稳定 & 游客端和管理端功能、45项API、数据库闭环、降级策略 \\
+    技术与创新性 & 30\% & 数字人表现力；大模型与知识库准确合理 & 讯飞与Live2D双引擎编排、五语言i18n、RAG检索与引用、情绪联动 \\
+    行业实用与体验 & 20\% & 痛点解决程度、交互自然度与用户体验 & 路线个性化、响应时延、反馈分析、运营大屏、移动端适配 \\
+    文档质量 & 10\% & 结构清晰并充分展示亮点 & 图表、流程图、架构图、真实代码、伪代码和实测结果 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{产品目标与范围}
+
+\begin{itemize}
+  \item \textbf{可信导览：}事实问答只基于本地景区资料，输出引用来源；对越界、敏感或资料缺失问题明确拒答。
+  \item \textbf{跨语言服务：}简体中文、英文、韩文、繁体中文和日文统一覆盖框架与业务页面，语言偏好可恢复。
+  \item \textbf{自然交互：}支持文本、语音输入以及云端或本地数字人的语音播报、口型同步、表情和动作联动。
+  \item \textbf{个性服务：}结合游玩时长、兴趣、亲子、拍照、演艺和体力限制生成路线及节点讲解。
+  \item \textbf{运营闭环：}管理端支持知识、景点、FAQ、数字人形象、会话、反馈、用户和运营指标管理。
+  \item \textbf{稳定交付：}讯飞云端形象不可用时可切换Live2D本地模型，语音或模型继续异常时保留文本服务，确保核心导览不中断。
+\end{itemize}
+
+产品边界聚焦\textbf{灵山胜境与拈花湾资料包}；不替代票务交易、导航地图和景区应急指挥系统，但预留\textbf{GPS伴随讲解、向量检索和更多终端形态}的扩展接口。

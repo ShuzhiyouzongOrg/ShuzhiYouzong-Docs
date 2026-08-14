@@ -1,0 +1,74 @@
+\chapter{产品总体设计}
+
+\section{总体架构}
+
+系统采用\textbf{浏览器双端、统一API、模块化业务服务和本地数据层}的分层结构。游客端与管理端共享Vue 3、Vue I18n和统一消息目录，但通过\textbf{路由和角色权限}隔离；Node.js服务统一处理鉴权、问答、语音、路线、数字人、知识管理和分析请求；SQLite保存事务型业务数据，JSON知识库保存可重建的景点实体与分块。总体关系如图\ref{fig:overall-architecture}所示。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.98\textwidth]{system-architecture.pdf}
+  \caption{数智游踪系统总体架构图}\label{fig:overall-architecture}
+\end{figure}
+
+\subsection{表现与交互层}
+
+游客端围绕\textbf{“看、问、听、游、评”}组织：数字人画面提供视觉主体，文本框和语音按钮承载输入，景点卡片与路线面板承载主动探索，来源和时延信息增强可信感。管理端围绕\textbf{“建、配、看、改”}组织：构建知识、配置数字人、观察运营指标、修正错误问答。顶部语言入口在两端共享，切换后\textbf{导航、标签、表单、提示、数据状态与数字人配置文案}同时更新；移动端宽度下工具区切换为单列，保证景区现场可用。
+
+\subsection{业务与智能服务层}
+
+业务层以\textbf{服务模块}封装能力，入口位于\filepath{server/src/app.mjs}。其中问答服务协调FAQ缓存、护栏、混合检索、大模型和引用；语音服务组织\textbf{ASR--RAG--TTS}；数字人服务保存启用配置并管理形象、音色和回答状态映射，前端调度器依据\filepath{engine}选择\textbf{讯飞或Live2D运行时}；路线服务按偏好评分并生成节点解释；运营服务融合会话、反馈和线下消费数据。
+
+\subsection{数据与外部能力层}
+
+本地层包含\textbf{10张SQLite业务表、22个景点实体、44个知识分块}、20条检索测试用例和50条问答测试用例。外部能力以\textbf{适配器}接入OpenAI兼容大模型、ASR/TTS和讯飞交互式数字人。讯飞Web SDK以应用凭证、形象ID和渲染容器启动视频流\upcite{iflytekWebSdk}，项目在此基础上封装\filepath{useXfAvatar.ts}，通过\filepath{writeText}下发答案及情绪参数；本地侧内置\textbf{Live2D Cubism模型与Web Audio口型驱动}，形成不依赖讯飞形象流的备用渲染路径。
+
+\section{整体技术路线}
+
+整体技术路线由需求与资料输入开始，依次完成\textbf{知识工程、智能编排、多模态表达、双端产品化、运营闭环和工程验证}。每一阶段均对应当前项目中的数据产物、服务模块、界面或自动化脚本，形成从赛题要求到\textbf{可部署系统}的纵向实现链路，如图\ref{fig:technical-route}所示。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[height=0.70\textheight,keepaspectratio]{technical-route.pdf}
+  \caption{数智游踪整体技术路线图}\label{fig:technical-route}
+\end{figure}
+
+\newpage
+\section{技术选型}
+
+\begin{table}[H]
+  \centering
+  \caption{系统技术选型与理由表}\label{tab:tech-stack}
+  \begin{tabularx}{\textwidth}{p{0.16\textwidth}p{0.25\textwidth}X}
+    \toprule
+    层次 & 技术 & 选型理由 \\
+    \midrule
+    Web前端 & Vue 3、TypeScript、Vite、Vue I18n、Element Plus、ECharts & 组件化开发、类型约束、五语言运行时切换和成熟的数据可视化能力 \\
+    数字人 & 讯飞交互式数字人SDK、WebRTC、Live2D Cubism、Web Audio & 云端流式形象与本地画布模型共用播报接口，形象与音色可由后台配置 \\
+    服务端 & Node.js原生HTTP、ES Modules & 轻量、启动快；服务边界清晰，便于演示部署和自动化测试 \\
+    智能问答 & 本地RAG、OpenAI兼容LLM适配器 & 知识可更新、来源可追溯；模型提供者可替换，离线可降级 \\
+    数据层 & SQLite、JSON知识库、XLSX导入 & 零配置、单机部署方便；结构化业务数据与可重建知识数据分离 \\
+    工程保障 & OpenAPI、Bearer Token、scrypt、日志与备份脚本 & 提升接口一致性、访问控制、凭证安全与故障恢复能力 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{关键设计原则}
+
+总体设计以\textbf{“事实可信、链路可控、能力可替换、现场可交付”}为约束，不以单一模型或单一数字人厂商作为系统成立的前提。各原则同时落实到接口字段、运行状态和管理动作中：
+
+\begin{enumerate}
+  \item \textbf{知识有界与证据优先：}模型只解释检索到的景区资料，回答同步返回来源、质量标签和缺证据状态。
+  \item \textbf{链路可观测与问题可追溯：}响应记录检索、LLM、ASR、TTS及总耗时，会话、反馈和人工标注能够反查到原始问题。
+  \item \textbf{体验渐进增强：}数字人和云语音作为增强能力，异常时自动保留文本问答、本地检索与路线推荐，避免现场服务中断。
+  \item \textbf{配置与能力解耦：}语言、形象、音色、渲染引擎、模型提供者、知识数据和路线模板均通过配置或适配器接入，降低替换成本。
+  \item \textbf{国际化全局一致：}框架文案和景区业务文案进入同一Vue I18n实例，语言选择写入用户状态并恢复，避免页面局部切换。
+  \item \textbf{管理形成质量闭环：}低满意或错误回答可转为知识补充草稿，FAQ修订后进入高优先级通道，形成“发现—修正—验证”闭环。
+  \item \textbf{实现、测试与文档一致：}所有指标均对应当前工程脚本、接口和数据产物，不将规划功能表述为既有成果。
+\end{enumerate}
+
+\newpage
+\section{功能域划分}
+
+系统按职责划分为六个功能域：\textbf{游客服务域}组织文本、语音、景点讲解与反馈入口；\textbf{知识问答域}负责护栏、FAQ、混合检索、生成与引用；\textbf{数字人域}管理双引擎形象、音色、情绪状态和播报控制；\textbf{路线域}完成偏好采集、模板评分、自适应调整与节点解释；\textbf{运营分析域}汇聚会话、满意度、游客行为和质量指标；\textbf{平台管理域}提供身份、权限、配置、日志与健康检查。\textbf{国际化能力作为横切层}覆盖上述全部功能域，而不是独立于业务页面之外的翻译壳层。
+
+域之间只通过明确的\textbf{服务函数、事件状态和API合同}交互：游客页面不直接访问数据库，数字人只消费标准化答案与表达状态，运营分析只读取脱敏后的业务结构，知识重建不改写历史会话。该边界既保证当前单机同源部署简洁，也为后续替换模型、数字人厂商或前端终端保留\textbf{稳定接口}。

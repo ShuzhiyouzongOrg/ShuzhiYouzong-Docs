@@ -1,0 +1,55 @@
+\chapter{测试评估与应用价值}
+
+\section{测试策略与结果}
+
+测试遵循\textbf{“知识数据--服务函数--接口场景--工程构建”四层结构}。2026年7月16日在当前工程执行后端完整性、数据库、问答、检索、路线、语音、数字人、分析、质量、并发和降级脚本，\textbf{全部通过}；前端TypeScript检查验证五语言消息元组和数字人配置类型，Vite生产构建通过，共转换\textbf{2838个模块}。
+
+\begin{table}[H]
+  \centering
+  \caption{项目自动化测试与评估结果汇总表}\label{tab:test-results}
+  \begin{tabularx}{\textwidth}{p{0.25\textwidth}p{0.20\textwidth}X p{0.14\textwidth}}
+    \toprule
+    验证项 & 数据规模或场景 & 当前结果 & 结论 \\
+    \midrule
+    工程完整性检查 & 目录、数据、合同、配置 & \filepath{check}通过 & 通过 \\
+    SQLite数据库测试 & 预置、登录、会话、FAQ、景点、数字人等8项 & 8/8通过 & 通过 \\
+    问答场景测试 & 事实、讲解、路线、越界、敏感、多轮、缓存等 & 13/13通过 & 通过 \\
+    标准问答评估 & 50题；48条可回答、2条拒答 & 50/50，准确率100\% & 超过90\%阈值 \\
+    检索评估 & 20条用例 & Top-1标题95\%；Top-3标题/景点/词项100\% & 通过 \\
+    五语言国际化 & 五元组业务词典、框架覆盖、Locale枚举与生产构建 & TypeScript检查与五语言资源构建成功 & 通过 \\
+    业务模块测试 & 路线、语音、数字人配置、分析、服务质量 & 全部通过 & 通过 \\
+    稳定性测试 & 并发问答与演示降级 & 全部通过 & 通过 \\
+    前端生产构建 & Vue类型检查与Vite构建 & 2838模块转换，构建成功 & 通过 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+需要说明：50题问答评估使用项目内置\textbf{确定性Mock模型}，验证的是知识命中、场景分类、引用和答案要点，\textbf{不等同于真实云模型的自然度评价}；数字人实时画面、口型自然度和云端语音总时延须在有讯飞额度、外网和真实浏览器的演示环境人工验证。
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[x=1.10cm,y=0.82cm]
+    \draw[->,thick,guideGray] (0,0) -- (10.2,0) node[right,font=\small] {准确率/召回率};
+    \foreach \x/\lab in {0/0,2/20,4/40,6/60,8/80,10/100}{
+      \draw[guideGray] (\x,0.08) -- (\x,-0.08) node[below,font=\scriptsize] {\lab\%};
+    }
+    \fill[guideTeal] (0,0.55) rectangle (9.5,1.05);
+    \node[anchor=east,font=\small] at (-0.15,0.80) {检索Top-1};
+    \node[anchor=west,font=\small\bfseries] at (9.55,0.80) {95\%};
+    \fill[guideTeal] (0,1.45) rectangle (10,1.95);
+    \node[anchor=east,font=\small] at (-0.15,1.70) {检索Top-3};
+    \node[anchor=west,font=\small\bfseries] at (10.05,1.70) {100\%};
+    \fill[guideGold] (0,2.35) rectangle (10,2.85);
+    \node[anchor=east,font=\small] at (-0.15,2.60) {标准问答};
+    \node[anchor=west,font=\small\bfseries] at (10.05,2.60) {100\%};
+    \draw[dashed,very thick,red!65!black] (9,0.25) -- (9,3.15);
+    \node[anchor=south,font=\scriptsize,text=red!65!black] at (9,3.15) {赛题阈值：90\%};
+  \end{tikzpicture}
+  \caption{核心问答与检索指标对比图}\label{fig:evaluation}
+\end{figure}
+
+\section{行业应用价值}
+
+对于游客，产品降低导览服务获取门槛，\textbf{五语言界面}支持不同语言游客理解导览操作，个性路线和可见引用提升自由探索能力与信任；对于景区，产品将重复讲解、FAQ维护、游客反馈和运营分析集中到\textbf{统一平台}，缓解旺季人员压力；对于文旅内容运营方，景点实体、知识分块、云端/本地数字人形象、音色和路线模板\textbf{均可配置}，具备迁移到其他景区的基础。
+
+在真实部署中，可按照\textbf{“单景区知识库验证--多终端接入--运营数据闭环--多景区复制”}的路径渐进推广。下一阶段可增加GPS到点讲解、向量检索、多语种景点知识内容与人工术语审校、弱网缓存及票务/客流系统对接，但这些扩展不影响当前\textbf{五语言界面与赛题功能闭环}。

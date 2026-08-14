@@ -1,0 +1,183 @@
+% !TEX program = xelatex
+% 数智游踪——产品总体设计文档（第十五届“中国软件杯”A5赛题）
+\documentclass[lang=cn,10pt,openany,citestyle=gb7714-2015,bibstyle=gb7714-2015]{elegantbook}
+
+\title{数智游踪——智慧景区沉浸式AI导览助手}
+\subtitle{A5赛题}
+\author{张婧瑜\quad 季祥\quad 林骏毅}
+\institute{泉州信息工程学院——数智游踪队}
+\date{July 16, 2026}
+\version{v2.0.0}
+\bioinfo{指导老师}{陈子淮}
+\extrainfo{禅意灵山·智慧同行——AI 数字人为您讲解景点、规划路线、答疑解惑}
+\cover{figures/cover.png}
+\logo{figures/logo.png}
+\hypersetup{
+  pdftitle={数智游踪——智慧景区沉浸式AI导览助手},
+  pdfauthor={张婧瑜、季祥、林骏毅},
+  pdfsubject={智慧景区沉浸式AI导览助手技术文档},
+  pdfkeywords={数智游踪, 智慧景区, AI导览, 数字人}
+}
+
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+\raggedbottom
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,positioning,fit,backgrounds,shapes.geometric,shapes.symbols}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{needspace}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{url}
+
+\graphicspath{{figure/}{figures/}{figures/drawio/}{assets/screenshots/}}
+\ExecuteBibliographyOptions{sorting=none}
+\floatname{algorithm}{算法}
+\renewcommand{\algorithmicrequire}{\textbf{输入：}}
+\renewcommand{\algorithmicensure}{\textbf{输出：}}
+\newcommand{\yes}{\textcolor{structurecolor}{\ensuremath{\checkmark}}}
+\newcommand{\filepath}[1]{\texttt{\detokenize{#1}}}
+
+\definecolor{guideTeal}{RGB}{29,111,103}
+\definecolor{guideTealLight}{RGB}{232,244,242}
+\definecolor{guideGold}{RGB}{215,139,22}
+\definecolor{guideGoldLight}{RGB}{255,244,222}
+\definecolor{guideGray}{RGB}{91,105,117}
+\definecolor{projectCoverLine}{RGB}{173,216,230}
+\colorlet{coverlinecolor}{projectCoverLine}
+
+\tikzset{
+  core/.style={draw=guideTeal, very thick, rounded corners=3pt, fill=guideTealLight,
+    minimum width=2.25cm, minimum height=1.05cm, align=center, font=\small\bfseries},
+  coregold/.style={draw=guideGold, very thick, rounded corners=3pt, fill=guideGoldLight,
+    minimum width=2.25cm, minimum height=1.05cm, align=center, font=\small\bfseries},
+  side/.style={draw=guideGray, thick, rounded corners=3pt, fill=white,
+    minimum width=2.15cm, minimum height=0.85cm, align=center, font=\small},
+  flow/.style={-{Latex[length=2.8mm,width=2mm]}, very thick, draw=guideTeal},
+  flowgold/.style={-{Latex[length=2.8mm,width=2mm]}, very thick, draw=guideGold},
+  curved/.style={-{Latex[length=2.6mm,width=1.8mm]}, thick, draw=guideGray}
+}
+
+\lstdefinelanguage{JavaScript}{
+  keywords={async,await,break,case,catch,class,const,continue,default,delete,do,else,
+    export,extends,false,finally,for,from,function,get,if,import,in,instanceof,let,new,
+    null,of,return,set,static,super,switch,this,throw,true,try,typeof,undefined,var,while,yield},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]'
+}
+\lstdefinestyle{projectcode}{
+  language=JavaScript,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  stringstyle=\color{red!65!black},
+  commentstyle=\color{green!45!black},
+  numbers=left,
+  numberstyle=\scriptsize\color{gray},
+  numbersep=6pt,
+  frame=single,
+  rulecolor=\color{structurecolor},
+  framerule=0.3pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=2,
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true,
+  captionpos=b,
+  aboveskip=0.6em,
+  belowskip=0.4em
+}
+
+\captionsetup{font=small,labelfont=bf,labelsep=quad}
+\addtolength{\cftchapnumwidth}{0.5em}
+\renewcommand{\arraystretch}{1.22}
+\setlist[itemize]{leftmargin=2em,itemsep=0.25em,topsep=0.35em}
+\setlist[enumerate]{leftmargin=2.2em,itemsep=0.25em,topsep=0.35em}
+
+% 目录后一页：摘要；再下一页：在同一页连续输出表格与插图清单。
+\makeatletter
+\newcommand{\printprojectabstract}{%
+  \newpage
+  \thispagestyle{plain}
+  \phantomsection
+  \addcontentsline{toc}{chapter}{摘要}
+  \begin{center}
+    {\songti\zihao{-2}\bfseries 摘要\par}
+  \end{center}
+  \vspace{1.0em}
+  \begingroup
+    \songti\zihao{-4}
+    \setlength{\parindent}{2em}
+    \setlength{\parskip}{0.65em}
+
+    “数智游踪”面向第十五届“中国软件杯”A5“景区导览服务AI数字人”赛题，针对旺季导游供给不足、传统录音导览无法追问、游客偏好难以满足以及服务数据难以反哺运营等问题，建设集可信问答、智能讲解、个性路线、数字人表达和运营分析于一体的智慧景区沉浸式导览助手。产品以无锡灵山胜境及拈花湾禅意小镇公开资料为知识边界，形成游客端与管理端协同、线上服务与线下运营联动的业务闭环。
+
+    系统采用Vue 3双端前台、Node.js统一API、模块化智能服务、SQLite事务数据与JSON知识库相结合的分层架构。前端以Vue I18n建立简体中文、英文、韩文、繁体中文和日文五语言体系，将框架文案与景区业务文案统一纳入运行时切换和偏好持久化；核心问答链路以景点实体、关键词、意图和查询覆盖度构成混合检索，通过FAQ快速通道、敏感与越界护栏、证据重排和引用约束实现有据生成。
+
+    数字人层采用讯飞云端流式数字人与本地\textbf{Live2D}双引擎模型：云端引擎负责WebRTC视频、TTS、口型和情绪表达，本地引擎通过Cubism画布、后端TTS和Web Audio振幅分析驱动口型。管理端提供形象与音色折叠式快捷选择，同时保留形象ID、模型ID、VCN、语速、欢迎语、情绪风格和服务状态等精细参数；启用配置实时下发游客端，统一调度器对外保持相同的播报、解锁音频与打断接口。
+
+    当前工程已实现游客导览、管理登录、知识管理、数字人配置、路线推荐、会话反馈、运营大屏和质量修正等完整功能。其中，全局五语言国际化和双引擎数字人模型使同一套导览业务既能面向不同语言游客一致呈现，也能在云端数字人不可用时切换本地形象继续服务。项目测试覆盖\textbf{50}条标准问答和\textbf{20}条检索用例，前端类型检查、生产构建、数字人、并发与降级测试均通过。
+
+    \noindent\textbf{关键词：}景区导览；AI数字人；国际化；双引擎模型；检索增强生成；多模态交互
+  \endgroup
+}
+
+\newcommand{\printcombinedlists}{%
+  \newpage
+  \thispagestyle{plain}
+  \phantomsection
+  \addcontentsline{toc}{chapter}{表格与插图清单}
+  \begin{center}
+    {\songti\zihao{-2}\bfseries 表格与插图清单\par}
+  \end{center}
+  \vspace{0.6em}
+  \begingroup
+    \songti\zihao{4}
+    \setlength{\parskip}{0pt}
+    \let\addvspace\@gobble
+    \renewcommand{\numberline}[1]{表##1\hspace{0.8em}}
+    \@starttoc{lot}
+    \vspace{0.65em}
+    \renewcommand{\numberline}[1]{图##1\hspace{0.8em}}
+    \@starttoc{lof}
+  \endgroup
+}
+\makeatother
+
+\begin{document}
+
+\maketitle
+\frontmatter
+\begingroup
+  \zihao{-4}
+  \tableofcontents
+\endgroup
+\printprojectabstract
+\printcombinedlists
+
+\mainmatter
+\newpage\input{chapters/01-background}
+\newpage\input{chapters/02-architecture}
+\newpage\input{chapters/03-functions}
+\newpage\input{chapters/04-technology}
+\newpage\input{chapters/05-data-deployment}
+\newpage\input{chapters/06-quality-security}
+\newpage\input{chapters/07-evaluation-value}
+\newpage\input{chapters/08-innovation}
+\newpage\input{chapters/09-conclusion}
+
+\newpage
+\printbibliography[heading=bibintoc,title=参考文献]
+
+\end{document}

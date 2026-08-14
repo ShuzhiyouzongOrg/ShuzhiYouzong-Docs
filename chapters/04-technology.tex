@@ -1,0 +1,237 @@
+\chapter{核心技术与算法设计}
+
+\section{全局五语言i18n架构}
+
+系统以\textbf{单一Vue I18n实例}承载简体中文、英文、韩文、繁体中文和日文。与仅替换框架菜单的局部国际化不同，系统把\textbf{景区业务文案}单独整理为\filepath{app.*}命名空间，并与原有框架词典合并，因此游客问答、景点与路线、数字人状态、管理表单、运营指标、会话反馈和提示弹窗均从同一活动语言解析。
+
+业务词典按\filepath{zh}、\filepath{en}、\filepath{ko}、\filepath{zh-TW}、\filepath{ja}五个固定位置声明，每个键在构建阶段必须具有\textbf{完整五元组}。\\\filepath{LanguageEnum}提供\textbf{唯一语言代码集合}。简体中文与英文使用完整基础JSON，韩文和日文以英文框架消息为基底，繁体中文以简体中文为基底，再叠加\filepath{framework-messages.ts}的框架覆盖与\filepath{app-messages.ts}的完整业务译文。最终\textbf{未命中项回退英文}，避免渲染空白。
+
+\begin{table}[H]
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.35}
+  \caption{国际化分层实现表}\label{tab:i18n-architecture}
+  \begin{tabularx}{\textwidth}{p{0.24\textwidth}p{0.31\textwidth}X}
+    \toprule
+    层次 & 关键实现 & 技术作用 \\
+    \midrule
+    语言模型 & \filepath{LanguageEnum}、\filepath{languageOptions} & 统一五种Locale代码与界面选择顺序 \\
+    基础框架词典 & \filepath{langs/zh.json}、\filepath{langs/en.json} & 提供布局、设置、表格等完整基础消息 \\
+    框架覆盖词典 & \filepath{framework-messages.ts} & 补齐韩文、繁体中文、日文的框架级消息 \\
+    景区业务词典 & \filepath{app-messages.ts} & 以五元组维护全部游客端与管理端业务文\newline 案 \\
+    切换与持久化 & 顶部语言入口、\newline\filepath{userStore.language} & 同步Locale、页面标题、HTML语言属性与本地偏好 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+用户选择语言后，顶部栏\textbf{同时更新全局语言状态}，包括\filepath{locale}、Pinia语言状态和\filepath{document.documentElement.lang}，\\并刷新路由标题、菜单、面包屑和工作标签。应用启动时先读取\textbf{版本化用户存储}，再兼容旧系统存储，均无记录时使用简体中文。游客端的浏览器语音识别与管理端欢迎语试听还会把Locale映射为\filepath{zh-CN}、\filepath{en-US}、\filepath{ko-KR}、\filepath{zh-TW}或\filepath{ja-JP}。
+
+需要明确的是，当前国际化对象是\textbf{界面文案、路由元信息和浏览器语音Locale}；景点资料、历史会话及RAG/LLM生成内容保持其数据原始语言，\textbf{不在前端运行时执行机器翻译}。
+
+\noindent\textit{源码位置：}
+\begin{itemize}
+  \item \filepath{web/src/locales/index.ts}
+  \item \filepath{web/src/locales/app-messages.ts}
+  \item \filepath{web/src/components/core/layouts/art-header-bar/index.vue}
+\end{itemize}
+
+\newpage
+\lstinputlisting[style=projectcode,firstnumber=1,
+  caption={五语言词典合并与全局切换核心代码},label={lst:i18n}]
+  {assets/code/i18n-core.ts}
+
+\newpage
+\section{本地知识库与RAG问答}
+
+Transformer为当前主流大模型提供了基于注意力的序列建模基础\upcite{vaswani2017attention}。RAG进一步将参数化生成模型与外部非参数知识结合，使\textbf{知识更新、证据追踪和事实约束}成为可能\upcite{lewis2020rag}。本项目采用适合比赛资料规模的\textbf{本地混合检索}：景点实体、标题、关键词、正文、同义扩展、意图和查询覆盖度共同计分；检索结果经重排后\textbf{最多选择3条引用}进入答案。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.75\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[core] (r1) at (0,0) {问题输入\\上下文补全};
+    \node[core] (r2) at (2.75,0) {安全护栏\\范围与敏感};
+    \node[core] (r3) at (5.50,0) {混合检索\\实体/词项/意图};
+    \node[core] (r4) at (8.25,0) {规则重排\\Top-K证据};
+    \node[coregold] (r5) at (11.00,0) {大模型生成\\有据回答};
+    \node[coregold] (r6) at (13.75,0) {响应封装\\引用/标签/耗时};
+    \draw[flow] (r1.east) -- (r2.west);
+    \draw[flow] (r2.east) -- (r3.west);
+    \draw[flow] (r3.east) -- (r4.west);
+    \draw[flowgold] (r4.east) -- (r5.west);
+    \draw[flowgold] (r5.east) -- (r6.west);
+    \node[side] (faq) at (2.75,2.05) {FAQ缓存\\高频快速路径};
+    \node[side] (kb) at (6.85,-2.05) {本地知识库\\22景点/44分块};
+    \node[side] (reject) at (11.00,2.05) {拒答策略\\越界/无资料};
+    \draw[curved] (r1.north) to[out=90,in=180] (faq.west);
+    \draw[curved] (faq.north) .. controls (2.75,4.25) and (15.25,4.25) .. (r6.east);
+    \draw[curved] (kb.north west) to[out=135,in=270] (r3.south);
+    \draw[curved] (r4.south) to[out=270,in=45] (kb.north east);
+    \draw[curved] (r2.north) .. controls (4.50,1.20) and (8.80,1.20) .. (reject.west);
+    \draw[curved] (reject.south) to[out=270,in=90] (r5.north);
+  \end{tikzpicture}}
+  \caption{本地知识库RAG可信问答流程图}\label{fig:rag-flow}
+\end{figure}
+
+\begin{algorithm}[H]
+  \caption{混合检索与有据生成算法}\label{alg:rag}
+  \begin{algorithmic}[1]
+    \Require 问题$q$、会话历史$H$、知识分块集合$D$、返回数量$k$
+    \Ensure 答案$a$、引用集合$C$、质量与情绪标签
+    \State $q' \gets \Call{ResolveFollowUp}{q,H}$ \Comment{补全多轮指代}
+    \If{$q'$命中敏感规则或超出景区范围}
+      \State \Return 拒答结果及引导语 \Comment{先执行安全边界}
+    \EndIf
+    \If{FAQ缓存命中$q'$}
+      \State \Return 缓存答案与零检索耗时 \Comment{高频问题快速返回}
+    \EndIf
+    \State $T \gets \Call{TokenizeAndExpand}{q'}$
+    \State $I \gets \Call{DetectIntent}{q',T}$，$S \gets \Call{MatchSpot}{q',T}$
+    \State $(w_s,w_t,w_i,w_c) \gets \Call{Calibrate}{TestSet}$ \Comment{权重由测试集校准}
+    \ForAll{$d \in D$}
+      \State $score[d] \gets w_sS+w_tT+w_iI+w_c\Call{Coverage}{q',d}$
+    \EndFor
+    \State $C \gets \Call{RerankAndTopK}{D,score,k}$ \Comment{实体与开放时间保持强约束}
+    \Statex \Comment{多景区大规模语料可融合DPR稠密召回\upcite{karpukhin2020dpr}}
+    \If{$C$为空或相关性低于阈值}
+      \State \Return 资料未覆盖结果 \Comment{无证据不生成事实}
+    \EndIf
+    \State $a \gets \Call{LLMGenerate}{q',H,C}$ \Comment{只注入已选证据}
+    \State \Return $a,C,\Call{Label}{q',a}$
+  \end{algorithmic}
+\end{algorithm}
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/retrieval.mjs}。
+\lstinputlisting[style=projectcode,firstnumber=210,
+  caption={景点实体与词项混合评分核心代码},label={lst:retrieval}]
+  {assets/code/retrieval-score.mjs}
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/chat.mjs}。
+\lstinputlisting[style=projectcode,firstnumber=195,
+  caption={护栏检索与问答场景编排核心代码},label={lst:chat}]
+  {assets/code/chat-orchestration.mjs}
+
+\section{个性化路线推荐}
+
+路线模块将景区节点、模板路线和游客偏好统一为\textbf{可解释的规则评分}。\textbf{时长匹配}形成基础分，历史文化、佛教、自然、拍照、亲子、演艺和轻松步行等标签形成增益；体力限制会降低登高节点权重。得分最高的模板再经过“30分钟压缩”“避台阶”和“冲突兴趣折中”等\textbf{自适应步骤}。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.96\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[core] (t1) at (0,0) {偏好采集\\时长/兴趣/体力};
+    \node[core] (t2) at (3.05,0) {偏好归一\\布尔与标签};
+    \node[core] (t3) at (6.10,0) {模板评分\\时长+主题};
+    \node[coregold] (t4) at (9.15,0) {路线自适应\\压缩/避阶};
+    \node[coregold] (t5) at (12.20,0) {结果解释\\节点/理由/备选};
+    \draw[flow] (t1.east) -- (t2.west);
+    \draw[flow] (t2.east) -- (t3.west);
+    \draw[flowgold] (t3.east) -- (t4.west);
+    \draw[flowgold] (t4.east) -- (t5.west);
+    \node[side] (graph) at (6.10,2.0) {景区路线图\\节点与耗时};
+    \node[side] (narrate) at (12.20,-2.0) {数字人讲解\\路线节点};
+    \draw[curved] (graph.south) to[out=270,in=90] (t3.north);
+    \draw[curved] (t5.south) to[out=270,in=90] (narrate.north);
+  \end{tikzpicture}}
+  \caption{个性化游览路线推荐流程图}\label{fig:route-flow}
+\end{figure}
+
+\begin{algorithm}[H]
+  \caption{可解释个性化路线推荐算法}\label{alg:route}
+  \begin{algorithmic}[1]
+    \Require 游客偏好$p$、路线模板集合$R$、景点图$G$
+    \Ensure 推荐路线$r^*$及最多3条备选路线
+    \State $p' \gets \Call{Normalize}{p}$ \Comment{统一偏好字段}
+    \ForAll{$r \in R$}
+      \State $s_r \gets \Call{DurationFit}{r,p'}$ \Comment{先匹配游玩时长}
+      \State $s_r \gets s_r+\Call{InterestMatch}{r.tags,p'.interests}$ \Comment{叠加兴趣增益}
+      \State $s_r \gets s_r+\Call{GroupAndPhysicalFit}{r,p'}$ \Comment{考虑同行人与体力}
+    \EndFor
+    \State $R' \gets \Call{StableSortDescending}{R,s}$
+    \State $r^* \gets \Call{Adapt}{R'[1],p',G}$ \Comment{压缩路线或避开台阶}
+    \State $r^*.explanation \gets \Call{Explain}{r^*,p',s}$ \Comment{生成可读推荐理由}
+    \State \Return $r^*,R'[2\ldots4]$
+  \end{algorithmic}
+\end{algorithm}
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/routePlanner.mjs}。
+\lstinputlisting[style=projectcode,firstnumber=246,
+  caption={路线模板多维偏好评分核心代码},label={lst:route}]
+  {assets/code/route-score.mjs}
+
+\newpage
+\section{语音链路与数字人编排}
+
+语音链路不是对文本问答的简单外包装，而是一条\textbf{可观测、可打断、可降级}的多阶段服务。入口首先校验音频格式、时长与会话标识，再通过ASR得到规范化文本；问答服务继续执行上下文补全、护栏、检索和有据生成；长回答\textbf{按语义停顿切分}后进入TTS，既缩短首段播报等待，也避免单次合成失败影响整段答案。接口统一返回ASR、检索、生成、TTS与总耗时，前端据此显示当前阶段和\textbf{5秒目标判断}。
+
+数字人编排以\textbf{标准化答案状态}为边界。后端输出质量、场景与情绪标签，前端将其映射为“倾听、思考、讲解、致歉、引导”等状态；游客发起新问题或离开页面时可\textbf{立即打断播报并释放连接}，避免音频叠加与资源泄漏。\textbf{口型同步}是数字人自然度的重要评价维度，相关研究通常同时关注音频--视频同步精度与感知质量\upcite{prajwal2020wav2lip}。
+
+\subsection{配置驱动的双引擎模型调度}
+
+游客端\filepath{DigitalHumanAvatar.vue}是两套模型的\textbf{统一调度器}。组件先读取当前启用配置，再按\filepath{engine}渲染\filepath{XfAvatar}或\filepath{Live2dAvatar}，并只向业务页面暴露\filepath{speak}、\filepath{enableAudio}与\filepath{interrupt}等\textbf{一致方法}。由此，问答页面只关心“让当前数字人表达答案”，\textbf{无需分支判断云端或本地实现}。
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{讯飞与Live2D双引擎运行机制对比表}\label{tab:avatar-engines}
+  \begin{tabularx}{\textwidth}{p{0.16\textwidth}p{0.22\textwidth}X p{0.2506\textwidth}}
+    \toprule
+    引擎 & 配置标识 & 渲染与发声机制 & 适用与降级方式 \\
+    \midrule
+    讯飞云端 & \filepath{avatarId}、\filepath{vcn} & XRTC/WebRTC接收云端视频流；\filepath{writeText}驱动TTS、口型、表情与情绪 & 适合高表现力在线讲解；需有效账号、形象权限和网络 \\
+    Live2D本地 & \filepath{modelId}、\filepath{vcn} & Cubism与WebGL本地画布渲染；后端TTS音频进入Web Audio队列，RMS振幅驱动口型 & 不依赖讯飞形象流；作为管理员可切换的本地模型冗余 \\
+    纯文本 & \filepath{text_only} & 不启动形象渲染，保留答案、引用和页面交互 & 云端与本地模型均不适用时保证核心问答可用 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+讯飞引擎输出\textbf{1080×960、25帧/秒、1 Mbps}的视频流，后台配置的形象ID与VCN覆盖环境默认值；答案情绪被转换为TTS情感系数，SDK首帧、播报结束、错误和打断事件反向更新界面状态。Live2D引擎动态加载Cubism Core与模型\filepath{model3.json}，按句获取后端TTS音频并送入播放队列，\filepath{AnalyserNode}计算\textbf{平滑RMS振幅}后驱动嘴部参数，播放完成恢复待机状态。
+
+\begin{algorithm}[H]
+  \caption{语音问答与数字人表达编排算法}\label{alg:voice-avatar}
+  \begin{algorithmic}[1]
+    \Require 音频$x$或文本$q$、会话标识$s$
+    \Ensure 文本答案、音频片段、数字人状态与链路耗时
+    \State $q' \gets q\neq\varnothing ? q : \Call{ASR}{x}$ \Comment{文本输入可跳过转写}
+    \State $a,C,label,emotion \gets \Call{RAGAnswer}{q',s}$ \Comment{复用可信问答链路}
+    \State $segments \gets \Call{SplitForTTS}{a}$ \Comment{按语义停顿切分}
+    \State $audio \gets \Call{TTS}{segments}$ \Comment{逐段合成并统计耗时}
+    \State $state \gets \Call{MapAvatarState}{label,emotion}$ \Comment{映射表情动作与音色}
+    \State $cfg \gets \Call{GetActiveAvatarConfig}{}$ \Comment{读取唯一启用配置}
+    \If{$cfg.engine=\texttt{xfyun}$且形象权限可用}
+      \State \Call{WriteText}{a,state.ttsEmotion} \Comment{云端驱动语音、口型与表情}
+    \ElsIf{$cfg.engine=\texttt{live2d}$且本地模型可用}
+      \State \Call{QueueAudioAndDriveMouth}{audio,cfg.modelId} \Comment{本地播放与RMS口型}
+    \Else
+      \State 保留文本与音频输出，标记降级状态 \Comment{保证核心导览连续}
+    \EndIf
+    \State \Return $a,C,audio,state,latency$
+  \end{algorithmic}
+\end{algorithm}
+
+当讯飞形象凭证、额度或网络不可用时，管理员可在数字人配置页启用Live2D模型；如果本地模型或TTS仍不可用，则进入\textbf{纯文本服务}。当前设计采用\textbf{“配置驱动的人工切换冗余”}，\textbf{不会在连接失败后静默更换人物}，避免演示过程中角色突然改变。界面会保留连接、播报与错误状态，使现场人员能够说明失败阶段，同时保证游客仍可完成查询、阅读答案和获取路线。
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/voice.mjs}。
+\lstinputlisting[style=projectcode,firstnumber=240,
+  caption={ASR问答TTS全链路编排核心代码},label={lst:voice}]
+  {assets/code/voice-pipeline.mjs}
+
+\newpage
+\noindent\textit{源码位置：}\filepath{web/src/composables/useXfAvatar.ts}。
+\lstinputlisting[style=projectcode,firstnumber=82,
+  caption={讯飞云端数字人文本与情绪驱动核心代码},label={lst:avatar}]
+  {assets/code/avatar-orchestration.ts}
+
+\newpage
+\noindent\textit{源码位置：}
+\begin{itemize}
+  \item \filepath{web/src/components/digital-human/DigitalHumanAvatar.vue}
+  \item \filepath{web/src/composables/useLive2dAvatar.ts}
+\end{itemize}
+\lstinputlisting[style=projectcode,firstnumber=1,
+  caption={双引擎统一调度与Live2D音频口型核心代码},label={lst:dual-avatar}]
+  {assets/code/avatar-dual-engine.ts}

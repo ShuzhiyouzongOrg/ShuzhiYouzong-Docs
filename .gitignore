@@ -1,0 +1,49 @@
+# LaTeX intermediate files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.fdb_latexmk
+*.fls
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+
+# Generated build directories and minted caches
+.latex-build/
+_minted-*/
+$build/
+$out/
+
+# Historical root-level PDF names; source PDFs under figures/ remain trackable
+/product-design.pdf
+/项目技术文档（参考）.pdf
+
+# The formal deliverable must remain trackable
+!shuzhiyouzong-docs.pdf
+
+# Editor and operating-system noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vs/
