@@ -29,12 +29,8 @@
 需要明确的是，当前国际化对象是\textbf{界面文案、路由元信息和浏览器语音Locale}；景点资料、历史会话及RAG/LLM生成内容保持其数据原始语言，\textbf{不在前端运行时执行机器翻译}。
 
 \newpage
-\noindent\textit{源码位置：}
-\begin{itemize}
-  \item \filepath{web/src/locales/index.ts}
-  \item \filepath{web/src/locales/app-messages.ts}
-  \item \filepath{web/src/components/core/layouts/art-header-bar/index.vue}
-\end{itemize}
+\noindent\textit{源码位置：}\filepath{web/src/locales/index.ts}；\filepath{web/src/locales/app-messages.ts}。\\
+\filepath{web/src/components/core/layouts/art-header-bar/index.vue}。
 
 \lstinputlisting[style=projectcode,firstnumber=1,
   caption={五语言词典合并与全局切换核心代码},label={lst:i18n}]
@@ -281,6 +277,7 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
   caption={腾讯地图初始化与Leaflet回退核心代码},label={lst:web-map-fallback}]
   {assets/code/map-provider-fallback.ts}
 
+\newpage
 \subsection{游客多端：原生地图与本地手绘图互补}
 
 uni-app x游客端没有照搬Web的Leaflet容器，而是在\filepath{pages/map/index.uvue}内维护\filepath{artwork}与\filepath{native}两种模式。\textbf{原生模式}使用平台\texttt{<map>}组件呈现marker、polyline和系统定位；\textbf{手绘模式}加载灵山胜境或拈花湾的本地图块，按景区边界、投影参数和旋转角把GCJ-02坐标映射为画布位置。这样，在HarmonyOS模拟器缺少对应架构地图引擎、在线底图异常或弱网时，手绘图仍可显示景区结构、点位、推荐路线编号和景点卡片。
