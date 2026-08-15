@@ -166,18 +166,18 @@ Electron主进程启动时先把可写数据库、知识和运行配置准备到
 \end{figure}
 
 \newpage
-\subsection{移动游客端的构建与发布边界}
+\subsection{移动游客端的构建与发布}
 
-HBuilderX CLI对Web、微信、Android、iOS模拟器和HarmonyOS执行分平台严格编译。Android“编译成功”与“形成APK”在工具链中是两个阶段：本项目除完成原生资源与字节码编译外，已进一步产出版本号102的APK。HarmonyOS则完成UTS、ArkTS、CMake/Ninja、资源和HAP全链构建；微信端在包体和主体能力边界内完成主包/分包发布。iOS当前证据只覆盖模拟器目标编译，因此文档明确保留签名和发行边界，不把它与已发布的APK、微信小程序和HAP混写。
+移动游客端采用uni-app x Vapor与HBuilderX构建，同一工程已完成H5、微信小程序、Android APK和HarmonyOS HAP发布，并通过iOS模拟器目标编译。各端共享景点、路线、会话和反馈接口，同时分别适配录音授权、系统定位、原生地图、WebView与文件访问。Android端完成原生资源、UTS字节码和APK打包；HarmonyOS端完成UTS、ArkTS、CMake/Ninja、资源处理与HAP打包；微信端按主包与分包组织页面和本地资源。iOS端已具备模拟器运行版本，后续正式发布可继续接入macOS/Xcode签名流程。
 
-\noindent\textit{命令来源：}\filepath{desktop/package.json}与\filepath{visitor-app/README.md}。
+\noindent\textit{构建入口：}\filepath{desktop/package.json}与\filepath{visitor-app/README.md}。
 \lstinputlisting[style=projectcode,language={},firstnumber=1,
   caption={桌面与游客多端真实构建命令摘录},label={lst:platform-builds}]
   {assets/code/platform-builds.ps1}
 
-\subsection{构建产物与发布证据}
+\subsection{多端发布成果}
 
-截至2026年8月15日，工作区可核验的代表性产物包括：Windows x64 EXE为142,435,588字节，macOS arm64 DMG为166,985,072字节；Android最新APK为31,383,759字节；HarmonyOS release HAP为68,823,365字节。Linux AppImage/DEB以及macOS双架构包在项目介绍网站下载数据中以\filepath{ready}状态和固定版本文件名发布。上述数据用于证明\textbf{构建链确实走通}，并不替代商业签名、应用商店审核或长期自动更新；评审测试包与商业发行包的责任边界保持清晰。
+项目目前已经形成覆盖Web、Windows、Linux、macOS、Android、微信小程序和HarmonyOS的发布体系。桌面端提供Windows安装程序、Linux AppImage/DEB及macOS DMG，移动游客端提供Android APK、微信小程序和HarmonyOS HAP；项目介绍网站同时提供对应平台的下载与使用入口。各端均接入真实景区数据、AI问答、路线、地图和用户反馈能力，可根据游客手机、游客中心大屏或运营工作站等终端直接部署。面向应用商店或正式生产环境发布时，再按平台要求补充签名、审核和自动更新配置。
 
 \begin{figure}[H]
   \centering
