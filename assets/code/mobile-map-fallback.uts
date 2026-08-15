@@ -1,0 +1,37 @@
+// 节选自项目源代码/visitor-app/pages/map/index.uvue
+const mapMode = ref<string>('artwork')
+const mapScale = ref<number>(15)
+const mapMinScale = computed<number>(() => bootstrap.value?.config.minZoom ?? 15)
+const mapMaxScale = computed<number>(() => bootstrap.value?.config.maxZoom ?? 19)
+
+function setMapMode(mode : string) {
+	mapMode.value = mode
+	if (mode == 'artwork') clampArtworkPan()
+	refreshVisibleSpots()
+}
+
+function locateMe() {
+	uni.showLoading({ title: '定位中' })
+	uni.getLocation({
+		type: 'gcj02',
+		isHighAccuracy: true,
+		success: (result) => {
+			centerLatitude.value = result.latitude
+			centerLongitude.value = result.longitude
+			if (mapMode.value == 'artwork' && spots.value.length > 0) {
+				const current = { latitude: result.latitude, longitude: result.longitude } as MapPoint
+				let nearest = spots.value[0]
+				let nearestDistance = distanceMeters(current, { latitude: nearest.latitude, longitude: nearest.longitude } as MapPoint)
+				spots.value.forEach((spot : ScenicSpot) => {
+					const distance = distanceMeters(current, { latitude: spot.latitude, longitude: spot.longitude } as MapPoint)
+					if (distance < nearestDistance) { nearest = spot; nearestDistance = distance }
+				})
+				selectedSpot.value = nearest
+				sheetExpanded.value = true
+				refreshVisibleSpots()
+			}
+		},
+		fail: (error) => uni.showToast({ title: error.errMsg, icon: 'none' }),
+		complete: () => uni.hideLoading()
+	})
+}

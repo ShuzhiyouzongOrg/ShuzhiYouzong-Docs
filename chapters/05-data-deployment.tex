@@ -2,7 +2,7 @@
 
 \section{知识数据设计}
 
-知识构建脚本读取\textbf{官方DOCX资料}，解析结构化景点和导览章节，再生成景点实体、知识分块与来源元数据。每个分块保留文档名、章节、景点标识、正文和关键词，使检索结果能够形成\textbf{可读引用}。当前产物包含\textbf{22个景点实体和44个知识分块}，其中主景区与子景区通过\filepath{scenic_area}字段区分。
+知识构建脚本读取\textbf{官方DOCX资料和经整理的多语言Markdown资料}，解析结构化景点和导览章节，再生成景点实体、知识分块与来源元数据。每个分块保留文档名、章节、景点标识、正文、关键词和语言，使检索结果能够形成\textbf{可读引用}。2026年8月8日生成的当前快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个知识分块}；主景区与子景区通过\filepath{scenicArea}字段区分。地图中的高密度点位和道路轨迹属于地图数据，不与RAG景点实体数量混算。
 
 \begin{table}[H]
   \centering
@@ -11,8 +11,10 @@
     \toprule
     对象 & 关键字段 & 设计作用 & 当前规模 \\
     \midrule
-    景点实体 & id、name、aliases、culture、highlights、open\_info & 精确识别景点、别名、开放信息与文化特征 & 22条 \\
-    知识分块 & documentId、title、content、keywords、scenicSpotId & 作为检索最小证据单元，保留来源关系 & 44条 \\
+    景点实体 & id、name、aliases、culture、highlights、openInfo & 精确识别景点、别名、开放信息与文化特征 & 22条 \\
+    导览分节 & title、content、source、language & 保存可独立引用的章节级导览内容 & 20条 \\
+    知识分块 & documentId、title、content、keywords、scenicSpotId、language & 作为检索最小证据单元，保留来源关系 & 107条 \\
+    来源资料 & fileName、fileType、language、chunkCount & 记录DOCX/Markdown来源、语言和处理状态 & 7份 \\
     检索用例 & query、expectedTitle、expectedSpot、expectedTerms & 验证Top-1、Top-3和关键词召回 & 20条 \\
     问答用例 & question、scenario、label、terms、spot & 验证答案场景、标签、引用与实体 & 50条 \\
     上传文档 & fileName、fileType、status、chunkCount & 支持后台文档管理与知识重建状态追踪 & 数据库持久化 \\
@@ -87,3 +89,119 @@ SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、�
 \end{figure}
 
 \textbf{配置项按职责拆分}：后端保存端口、模型提供者、数据库路径和演示模式；前端保存讯飞应用凭证、服务地址、形象与音色默认值，并随构建产物部署Live2D Cubism运行时及Haru、Hiyori、Kei、Hibiki四套模型。运行配置中的\filepath{engine}、\filepath{avatar_id}、\filepath{model_id}和\filepath{vcn}\textbf{决定游客端实际加载路径}。\textbf{密钥文件不纳入版本控制}，部署前使用\filepath{npm run env:check}检查Node版本、数据文件、目录、端口和云端凭证。
+
+\newpage
+\section{多端发布与工程交付}\label{sec:multiplatform-delivery}
+
+当前成果由\textbf{Web/桌面交付族}和\textbf{uni-app x游客交付族}组成，而不是单一Web演示。前者复用Vue 3 Web、Node服务和SQLite数据层，由Electron 43.4.0封装为Windows、Linux、macOS安装包；后者以HBuilderX 5.24、uni-app x Vapor和RiceUI构建移动游客端，复用相同API、景点ID、会话、路线和反馈合同，分别落到H5、微信小程序、Android、iOS与HarmonyOS平台能力。两族共享业务语义，但不强行共享地图容器、录音权限和文件系统代码。
+
+\begin{table}[H]
+  \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
+  \renewcommand{\arraystretch}{1.10}
+  \caption{多终端构建目标、适配方式与当前交付状态表}\label{tab:platform-delivery}
+  \begin{tabularx}{\textwidth}{p{0.13\textwidth}p{0.21\textwidth}p{0.27\textwidth}X}
+    \toprule
+    平台 & 构建目标/运行时 & 关键适配 & 当前证据与状态 \\
+    \midrule
+    Web & Vite生产产物 + Node同源服务 & 浏览器录音/定位、腾讯地图与Leaflet、讯飞Web SDK & 主网站已上线；数字人、景区地图、管理端与项目介绍/文档网站可访问 \\
+    Windows & Electron x64 + NSIS EXE & 随包运行Web、Node服务和本地数据，回环随机端口 & 已完成编译构建与评审测试包发布；本地留存\path{ShuzhiYouzong-0.1.0-win-x64.exe} \\
+    Linux & Electron x64 + AppImage/DEB & 便携与安装包并行，校验glibc、包体、SQLite和启动链 & 已完成两类包构建、可移植性验证与服务器发布，下载项状态为\filepath{ready} \\
+    macOS & Electron x64/arm64 + DMG & Intel与Apple Silicon分别构建，运行数据写入userData & 已完成双架构编译构建与评审测试包发布；本地留存arm64 DMG \\
+    Android & uni-app x原生应用 + APK & 原生录音、定位、地图、安全区、受控WebView与公网API & 已完成APK构建；最新评审包\path{scenic-visitor-evaluation-1.0.2-102.apk} \\
+    微信小程序 & HBuilderX \path{mp-weixin} & 五Tab主包、四个业务分包；个人主体限制下使用本地数字人表现 & 已完成9个启用页面编译与发布；产物位于\path{unpackage/dist/build/mp-weixin} \\
+    HarmonyOS & UTS/ArkTS/CMake/Ninja + HAP & x86\_64模拟器手绘地图兜底、定位、录音与受控WebView & 已完成HAP全链构建，并在Pura 90模拟器安装启动和截图复核 \\
+    iOS & uni-app x模拟器目标 & 原生资源、字节码、定位/麦克风用途声明与API适配 & 模拟器目标编译已完成；正式签名、真机安装和商店发行仍需macOS/Xcode \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{桌面端一体化运行时}
+
+Electron主进程启动时先把可写数据库、知识和运行配置准备到\filepath{app.getPath("userData")}下的runtime目录，再以\filepath{127.0.0.1}和动态端口启动随包Node服务；只有\filepath{/api/health}通过后才加载主窗口。导航白名单仅允许当前回环源，外部链接交给系统浏览器。该设计避免固定端口冲突，也避免把SQLite写入只读安装目录；Windows NSIS、Linux AppImage/DEB与macOS DMG复用同一启动门禁和\filepath{node:sqlite}适配器。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[core] (pkg) at (0,0) {Electron安装包\\Web+Node+知识资产};
+    \node[core] (runtime) at (3.6,0) {用户数据目录\\配置/SQLite/日志};
+    \node[coregold] (server) at (7.2,0) {本地Node服务\\127.0.0.1:随机端口};
+    \node[coregold] (health) at (10.5,0) {健康检查\\启动门禁};
+    \node[core] (window) at (13.7,0) {桌面窗口\\统一业务界面};
+    \draw[flow] (pkg.east) -- (runtime.west);
+    \draw[flow] (runtime.east) -- (server.west);
+    \draw[flowgold] (server.east) -- (health.west);
+    \draw[flowgold] (health.east) -- (window.west);
+    \node[side] (cloud) at (7.2,-1.8) {可选云能力\\数字人/ASR/TTS/LLM};
+    \draw[curved] (server.south) -- (cloud.north);
+  \end{tikzpicture}}
+  \caption{Windows、Linux与macOS桌面端一体化启动流程图}\label{fig:desktop-runtime}
+\end{figure}
+
+\subsection{移动游客端的构建与发布边界}
+
+HBuilderX CLI对Web、微信、Android、iOS模拟器和HarmonyOS执行分平台严格编译。Android“编译成功”与“形成APK”在工具链中是两个阶段：本项目除完成原生资源与字节码编译外，已进一步产出版本号102的APK。HarmonyOS则完成UTS、ArkTS、CMake/Ninja、资源和HAP全链构建；微信端在包体和主体能力边界内完成主包/分包发布。iOS当前证据只覆盖模拟器目标编译，因此文档明确保留签名和发行边界，不把它与已发布的APK、微信小程序和HAP混写。
+
+\noindent\textit{命令来源：}\filepath{desktop/package.json}与\filepath{visitor-app/README.md}。
+\lstinputlisting[style=projectcode,language={},firstnumber=1,
+  caption={桌面与游客多端真实构建命令摘录},label={lst:platform-builds}]
+  {assets/code/platform-builds.ps1}
+
+\subsection{构建产物与发布证据}
+
+截至2026年8月15日，工作区可核验的代表性产物包括：Windows x64 EXE为142,435,588字节，macOS arm64 DMG为166,985,072字节；Android最新APK为31,383,759字节；HarmonyOS release HAP为68,823,365字节。Linux AppImage/DEB以及macOS双架构包在项目介绍网站下载数据中以\filepath{ready}状态和固定版本文件名发布。上述数据用于证明\textbf{构建链确实走通}，并不替代商业签名、应用商店审核或长期自动更新；评审测试包与商业发行包的责任边界保持清晰。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.47\textwidth}
+    \centering
+    \IfFileExists{assets/screenshots/visitor-android-home.png}{%
+      \includegraphics[height=0.40\textheight]{visitor-android-home.png}%
+    }{%
+      \begin{tikzpicture}
+        \draw[rounded corners=4pt,very thick,guideTeal,fill=guideTealLight] (0,0) rectangle (6.4,9.2);
+        \node[font=\bfseries,text=guideTeal] at (3.2,8.45) {Android APK截图占位};
+        \node[align=center,text=guideGray,font=\small] at (3.2,5.0) {建议：安装后的首页或AI导游页\\文件名：visitor-android-home.png\\展示：系统状态栏、五Tab与数字人\\推荐比例：9:19.5竖屏};
+      \end{tikzpicture}%
+    }
+    \small Android APK运行效果
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.47\textwidth}
+    \centering
+    \IfFileExists{assets/screenshots/visitor-wechat-home.png}{%
+      \includegraphics[height=0.40\textheight]{visitor-wechat-home.png}%
+    }{%
+      \begin{tikzpicture}
+        \draw[rounded corners=4pt,very thick,guideGold,fill=guideGoldLight] (0,0) rectangle (6.4,9.2);
+        \node[font=\bfseries,text=guideGold] at (3.2,8.45) {微信小程序截图占位};
+        \node[align=center,text=guideGray,font=\small] at (3.2,5.0) {建议：真机地图或AI导游页\\文件名：visitor-wechat-home.png\\展示：胶囊按钮、分包页面与本地数字人\\推荐比例：9:19.5竖屏};
+      \end{tikzpicture}%
+    }
+    \small 微信小程序运行效果
+  \end{minipage}
+  \caption{Android与微信游客端规范截图位置}\label{fig:mobile-placeholders}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \foreach \shotname/\osname/\shotdesc in {desktop-windows-launch.png/Windows/NSIS安装后主界面,desktop-linux-launch.png/Linux/AppImage或DEB启动,desktop-macos-launch.png/macOS/DMG启动与系统标题栏}{%
+    \begin{minipage}[t]{0.31\textwidth}
+      \centering
+      \IfFileExists{assets/screenshots/\shotname}{%
+        \includegraphics[width=\linewidth]{\shotname}%
+      }{%
+        \begin{tikzpicture}
+          \draw[rounded corners=3pt,thick,guideTeal,fill=white] (0,0) rectangle (4.45,2.75);
+          \node[font=\bfseries,text=guideTeal] at (2.225,2.25) {\osname 截图占位};
+          \node[align=center,text=guideGray,font=\scriptsize] at (2.225,1.25) {文件名：\shotname\\展示：\shotdesc\\比例：16:10或16:9};
+        \end{tikzpicture}%
+      }
+      \small \osname 桌面端
+    \end{minipage}\hfill
+  }
+  \caption{三类桌面端规范截图位置}\label{fig:desktop-placeholders}
+\end{figure}
+
+未来补图时只需将同名PNG放入\filepath{assets/screenshots}：LaTeX会自动以真实截图替换占位框，图号、标题和版面均保持不变。截图应保留系统标题栏或状态栏作为平台证据，同时避免展示密钥、个人账号、绝对用户路径等敏感信息。

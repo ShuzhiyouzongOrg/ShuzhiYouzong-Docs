@@ -1,10 +1,15 @@
-# 页面截图说明
+# 截图资源与占位规范
 
-最终文档现从 `figures/` 目录读取以下四张真实截图：
+本目录保存技术文档中可替换的多端运行截图。截图缺失时，正文使用 TikZ 占位框，不会阻塞 LaTeX 编译；后续只需保持文件名或修改对应 `\IfFileExists` 路径即可替换，不需要重新设计页面。
 
-- `visitor-guide.png`：游客端 AI 数字人导览页面，需包含数字人画面、一次带引用的问答以及景点或路线区域。
-- `login.png`：管理端身份认证登录页面，需包含品牌区、账号密码输入、滑块验证和登录按钮。
-- `admin-dashboard.png`：管理端运营分析大屏，需包含 KPI、趋势、景点热度、消费结构和运营建议。
-- `knowledge-console.png`：知识库管理页面，需包含上传文档、知识统计以及至少一条检索结果。
+建议资源：
 
-当前四张图片均已接入。后续替换时请保持文件名不变，建议继续使用 16:9 比例、宽度不低于 1600 像素的 PNG，并隐藏浏览器书签栏及无关通知。
+- `web-digital-human.webp`：Web 游客端数字人、答案、引用与语音状态，建议 16:9 或 4:3。
+- `web-scenic-map.webp`：Web 腾讯地图/Leaflet 手绘地图切换，建议 16:9。
+- `web-operations-dashboard.webp`：Web 管理端运营大屏，建议 16:9。
+- `visitor-android-home.png`：Android APK 首页或 AI 导游页，建议 9:16。
+- `visitor-wechat-map.png`：微信小程序地图页，建议 9:16。
+- `visitor-harmony-home.jpeg`、`visitor-harmony-map.jpeg`、`visitor-harmony-ai.jpeg`：鸿蒙 HAP 运行截图，建议 9:16。
+- `desktop-windows.png`、`desktop-linux.png`、`desktop-macos.png`：桌面端安装后运行截图，建议 16:9。
+
+当前已纳入的 `web-*` 与 `visitor-harmony-*` 为项目评审/介绍站真实截图；Windows、Linux、macOS、Android、微信小程序截图可按上述命名补入。

@@ -105,7 +105,7 @@
 \newpage
 \section{游客端交互设计}
 
-游客进入页面后由数字人播报欢迎语；可直接文字提问，也可启动\textbf{浏览器语音识别}。问答结果同时呈现\textbf{答案、质量标签、来源和时延}，数字人按情绪标签播报。景点卡片触发约一分钟讲解，路线偏好面板采集时长、兴趣、亲子和拍照需求，结果节点可继续点击讲解。会话末尾支持\textbf{赞踩、1--5分和文字反馈}。
+游客进入页面后由数字人播报欢迎语；可直接文字提问，也可启动语音输入。\textbf{Web端}按浏览器能力使用Web Speech API，\textbf{Android、iOS与HarmonyOS游客端}则由\filepath{uni.getRecorderManager}录音，经\filepath{uni.uploadFile}上传至\filepath{/api/voice/ask-upload}，从而复用服务端ASR--RAG--TTS链路；微信小程序在相同上传接口与权限约束下工作。问答结果同时呈现\textbf{答案、质量标签、来源和时延}，数字人按情绪标签播报。景点卡片触发约一分钟讲解，路线偏好面板采集时长、兴趣、亲子和拍照需求，结果节点可继续点击讲解。会话末尾支持\textbf{赞踩、1--5分和文字反馈}。
 
 \begin{figure}[H]
   \centering
@@ -138,7 +138,63 @@
   \caption{游客端AI数字人导览页面图}\label{fig:visitor-ui}
 \end{figure}
 
-\newpage
+\section{多端游客流程与界面适配}
+
+游客端不是把桌面网页等比例缩小，而是以\textbf{同一业务服务、两套交互密度和按平台分支的系统能力}组织。Web与Electron桌面端保留数字人、引用、路线和地图的并列工作区，适合讲解大屏、游客中心与评审演示；uni-app x游客端使用“首页—地图—AI导游—行程—我的”五个底部入口，景点详情、账号、收藏和反馈按页面或微信分包加载。二者共享Node API、景点标识、会话结构和路线字段，但录音、定位、地图容器、WebView和文件上传分别调用浏览器或uni原生能力。
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{游客业务在不同终端的交互适配表}\label{tab:visitor-platform-adaptation}
+  \begin{tabularx}{\textwidth}{p{0.15\textwidth}p{0.24\textwidth}p{0.25\textwidth}X}
+    \toprule
+    能力 & Web/桌面端 & Android/iOS/HarmonyOS & 微信小程序 \\
+    \midrule
+    语音输入 & Web Speech或页面录音能力，统一调用语音接口 & RecorderManager录音、uploadFile上传，服务端讯飞ASR & 同一录音上传链路，遵循小程序录音授权与包体约束 \\
+    数字人 & 讯飞Web SDK在线形象，配置可切换Live2D & 受控HTTPS WebView承载讯飞形象，失败时回到本地表现与TTS & 个人主体与业务域名限制下不加载受限WebView，使用本地播报动画与讯飞云音色 \\
+    地图定位 & 腾讯地图/Leaflet双路径，浏览器Geolocation & 原生\texttt{<map>}、本地手绘图与\texttt{uni.getLocation} & 原生\texttt{<map>}与GCJ-02定位，POI/算路由服务端Key能力补充 \\
+    页面组织 & 多栏工作区，适合大屏和管理联动 & 五Tab移动信息架构，安全区和触控尺寸适配 & 主包五Tab，详情、账号、收藏与反馈拆为分包 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+图\ref{fig:web-real-screens}和图\ref{fig:harmony-real-screens}均来自当前可运行系统，而非概念效果图。Web端展示数字人问答与景区手绘地图上的真实点位；HarmonyOS截图来自HAP在Pura 90模拟器的安装运行结果，覆盖首页、地图与AI导游主链路。Android APK与微信小程序的预留截图位置统一放在第\ref{sec:multiplatform-delivery}节，后续只需按约定文件名替换，无需重新排版。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{web-digital-human.png}
+    \small Web在线数字人与问答界面
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{web-scenic-map.png}
+    \small Web景区点位与手绘地图界面
+  \end{minipage}
+  \caption{Web端真实运行界面组图}\label{fig:web-real-screens}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{visitor-harmony-home.jpeg}
+    \small 首页与景点入口
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{visitor-harmony-map.jpeg}
+    \small 定位、点位与路线地图
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{visitor-harmony-ai.jpeg}
+    \small AI导游与数字人入口
+  \end{minipage}
+  \caption{HarmonyOS HAP真实运行界面组图}\label{fig:harmony-real-screens}
+\end{figure}
+
 \section{多模态交互流程}
 
 图\ref{fig:multimodal-flow}将\textbf{核心节点固定在同一水平线上}。快捷问题、云端数字人和会话记录作为扩展节点位于两侧，曲线从节点边缘出发，不穿越核心内容。
@@ -219,7 +275,9 @@
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{figures/admin-dashboard.png}{%
+  \IfFileExists{web-operations-dashboard.png}{%
+    \includegraphics[width=0.95\textwidth]{web-operations-dashboard.png}%
+  }{\IfFileExists{figures/admin-dashboard.png}{%
     \includegraphics[width=0.95\textwidth]{figures/admin-dashboard.png}%
   }{%
     \begin{tikzpicture}[x=1cm,y=1cm]
@@ -246,6 +304,6 @@
       \draw[rounded corners=3pt,fill=white,draw=guideGold] (2.55,0.55) rectangle (13.85,2.55);
       \node[text=guideGray] at (8.20,1.55) {消费结构 · 游客画像 · 热门问题 · 运营建议};
     \end{tikzpicture}%
-  }
+  }}
   \caption{管理端运营分析大屏页面图}\label{fig:admin-ui}
 \end{figure}

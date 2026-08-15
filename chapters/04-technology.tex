@@ -24,7 +24,7 @@
   \end{tabularx}
 \end{table}
 
-用户选择语言后，顶部栏\textbf{同时更新全局语言状态}，包括\filepath{locale}、Pinia语言状态和\filepath{document.documentElement.lang}，\\并刷新路由标题、菜单、面包屑和工作标签。应用启动时先读取\textbf{版本化用户存储}，再兼容旧系统存储，均无记录时使用简体中文。游客端的浏览器语音识别与管理端欢迎语试听还会把Locale映射为\filepath{zh-CN}、\filepath{en-US}、\filepath{ko-KR}、\filepath{zh-TW}或\filepath{ja-JP}。
+用户选择语言后，顶部栏\textbf{同时更新全局语言状态}，包括\filepath{locale}和Pinia语言状态；页面语言属性同步为 HTML 元素的 \filepath{lang} 字段。随后刷新路由标题、菜单、面包屑和工作标签。应用启动时先读取\textbf{版本化用户存储}，再兼容旧系统存储，均无记录时使用简体中文。游客端的浏览器语音识别与管理端欢迎语试听还会把Locale映射为\filepath{zh-CN}、\filepath{en-US}、\filepath{ko-KR}、\filepath{zh-TW}或\filepath{ja-JP}。
 
 需要明确的是，当前国际化对象是\textbf{界面文案、路由元信息和浏览器语音Locale}；景点资料、历史会话及RAG/LLM生成内容保持其数据原始语言，\textbf{不在前端运行时执行机器翻译}。
 
@@ -35,7 +35,6 @@
   \item \filepath{web/src/components/core/layouts/art-header-bar/index.vue}
 \end{itemize}
 
-\newpage
 \lstinputlisting[style=projectcode,firstnumber=1,
   caption={五语言词典合并与全局切换核心代码},label={lst:i18n}]
   {assets/code/i18n-core.ts}
@@ -101,13 +100,11 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
   \end{algorithmic}
 \end{algorithm}
 
-\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/retrieval.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=210,
   caption={景点实体与词项混合评分核心代码},label={lst:retrieval}]
   {assets/code/retrieval-score.mjs}
 
-\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/chat.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=195,
   caption={护栏检索与问答场景编排核心代码},label={lst:chat}]
@@ -156,7 +153,6 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
   \end{algorithmic}
 \end{algorithm}
 
-\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/routePlanner.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=246,
   caption={路线模板多维偏好评分核心代码},label={lst:route}]
@@ -214,19 +210,16 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
 
 当讯飞形象凭证、额度或网络不可用时，管理员可在数字人配置页启用Live2D模型；如果本地模型或TTS仍不可用，则进入\textbf{纯文本服务}。当前设计采用\textbf{“配置驱动的人工切换冗余”}，\textbf{不会在连接失败后静默更换人物}，避免演示过程中角色突然改变。界面会保留连接、播报与错误状态，使现场人员能够说明失败阶段，同时保证游客仍可完成查询、阅读答案和获取路线。
 
-\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/voice.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=240,
   caption={ASR问答TTS全链路编排核心代码},label={lst:voice}]
   {assets/code/voice-pipeline.mjs}
 
-\newpage
 \noindent\textit{源码位置：}\filepath{web/src/composables/useXfAvatar.ts}。
 \lstinputlisting[style=projectcode,firstnumber=82,
   caption={讯飞云端数字人文本与情绪驱动核心代码},label={lst:avatar}]
   {assets/code/avatar-orchestration.ts}
 
-\newpage
 \noindent\textit{源码位置：}
 \begin{itemize}
   \item \filepath{web/src/components/digital-human/DigitalHumanAvatar.vue}
@@ -235,3 +228,69 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
 \lstinputlisting[style=projectcode,firstnumber=1,
   caption={双引擎统一调度与Live2D音频口型核心代码},label={lst:dual-avatar}]
   {assets/code/avatar-dual-engine.ts}
+
+\newpage
+\section{地图双端兜底与坐标适配}
+
+景区地图的首要目标不是“始终显示同一家在线底图”，而是网络、Key、SDK或终端能力变化时仍能让游客判断\textbf{景点在哪里、路线经过哪些节点、当前位置靠近哪个景点}。项目因此把地图拆为\textbf{位置输入、业务点位、路线语义和渲染提供者}四层：GPS/系统定位只产生当前位置；22个RAG景点与更细粒度地图点位提供名称和讲解关联；路线折线描述游览顺序；腾讯地图、Leaflet、本地手绘图和uni原生地图负责在各端呈现。渲染层切换不会改写景点ID、当前路线或问答上下文。
+
+\subsection{Web端：Leaflet底座与腾讯地图在线增强}
+
+\filepath{ScenicMap.vue}初始化时先创建Leaflet实例并挂载可用的本地/瓦片层，随后仅在\textbf{浏览器在线、腾讯Key存在、容器就绪}时异步加载腾讯地图JS GL。在线初始化成功后，组件同步中心、缩放和旋转并隐藏Leaflet底层；发生\filepath{offline}事件、Key缺失、SDK加载失败、中心点无效或初始化异常时，\filepath{activateLeafletFallback}恢复Leaflet层和正确版权标识。由于点位、折线与选中景点状态保留在Vue和Leaflet业务层中，回退不会清空游客已选路线。
+
+这里的“双端”是\textbf{在线地图服务端与本地Web渲染端}的互补：腾讯地图提供标准在线底图与地理语义，Leaflet和随版本分发的景区手绘资产承担连续展示。二者不是两套相互割裂的业务页面，也不依赖游客手工重新输入景点。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[core] (data) at (0,0) {统一地图状态\\点位/路线/选中项};
+    \node[core] (check) at (3.4,0) {能力检查\\网络/Key/容器};
+    \node[coregold] (online) at (7.0,1.35) {腾讯地图JS GL\\在线标准底图};
+    \node[coregold] (local) at (7.0,-1.35) {Leaflet/手绘图\\本地可用路径};
+    \node[core] (result) at (10.8,0) {连续导览\\点位/路线/定位};
+    \draw[flow] (data.east) -- (check.west);
+    \draw[flowgold] (check.north east) to[out=20,in=180] node[above,font=\small]{在线且初始化成功} (online.west);
+    \draw[flow] (check.south east) to[out=-20,in=180] node[below,font=\small]{离线/缺Key/异常} (local.west);
+    \draw[flowgold] (online.east) to[out=0,in=25] (result.north west);
+    \draw[flow] (local.east) to[out=0,in=-25] (result.south west);
+    \draw[curved] (online.south) to[out=250,in=70] node[right,font=\scriptsize,align=center]{offline或SDK失败\\恢复本地层} (local.north);
+  \end{tikzpicture}}
+  \caption{Web地图在线服务与本地渲染兜底流程图}\label{fig:web-map-fallback}
+\end{figure}
+
+\noindent\textit{源码位置：}\filepath{web/src/components/map-guide/ScenicMap.vue}。
+\lstinputlisting[style=projectcode,firstnumber=1,
+  caption={腾讯地图初始化与Leaflet回退核心代码},label={lst:web-map-fallback}]
+  {assets/code/map-provider-fallback.ts}
+
+\subsection{游客多端：原生地图与本地手绘图互补}
+
+uni-app x游客端没有照搬Web的Leaflet容器，而是在\filepath{pages/map/index.uvue}内维护\filepath{artwork}与\filepath{native}两种模式。\textbf{原生模式}使用平台\texttt{<map>}组件呈现marker、polyline和系统定位；\textbf{手绘模式}加载灵山胜境或拈花湾的本地图块，按景区边界、投影参数和旋转角把GCJ-02坐标映射为画布位置。这样，在HarmonyOS模拟器缺少对应架构地图引擎、在线底图异常或弱网时，手绘图仍可显示景区结构、点位、推荐路线编号和景点卡片。
+
+定位按钮调用\filepath{uni.getLocation}并请求GCJ-02高精度坐标。在原生模式中，当前位置直接交给地图组件；在手绘模式中，代码计算当前位置到全部景点的球面距离，选择最近景点并展开详情。定位拒绝或漂移不会阻塞搜索、手动平移、点位选择和路线查看，因而\textbf{GPS是位置输入兜底，不是对地图内容的替代}。
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{地图异常条件、状态保持与用户结果表}\label{tab:map-degradation}
+  \begin{tabularx}{\textwidth}{p{0.24\textwidth}p{0.27\textwidth}X}
+    \toprule
+    触发条件 & 系统动作 & 游客仍可完成的任务 \\
+    \midrule
+    Web离线、腾讯Key缺失或SDK异常 & 激活Leaflet层，同步中心、缩放、点位、路线与版权说明 & 查看景区点位、手绘图、路线和景点讲解 \\
+    原生地图引擎不可用或弱网 & 切换/保留本地手绘图模式，使用本地边界与点位投影 & 搜索、缩放、平移、选点、查看推荐路线 \\
+    GPS权限拒绝或定位失败 & 显示可恢复提示，不覆盖既有中心与选中点位 & 手动浏览、按名称搜索、从景点卡片进入讲解 \\
+    GPS在山谷或室内漂移 & 最近点仅作为建议，保留游客手动选择能力 & 修正点位后继续问答、详情和行程操作 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\noindent\textit{源码位置：}\filepath{visitor-app/pages/map/index.uvue}。
+\lstinputlisting[style=projectcode,firstnumber=1,
+  caption={游客端地图模式切换与GPS最近点匹配核心代码},label={lst:mobile-map-fallback}]
+  {assets/code/mobile-map-fallback.uts}
+
+\subsection{坐标一致性与工程边界}
+
+在线地图与系统定位主要使用GCJ-02，浏览器原始定位和外部资料可能以WGS84提供，手绘图又需要经过边界归一化、旋转和像素投影。项目在地图配置中显式保存\textbf{坐标系、景区边界、图块尺寸、旋转角和缩放上下限}，避免把经纬度直接当作图片百分比。对路线而言，官方道路轨迹和景区点位用于\textbf{导览展示与推荐解释}，当前文档不把它夸大为具备实时路况、道路封闭或逐转向导航能力；这些能力仍需在线算路服务、现场道路数据和安全审核共同支撑。
