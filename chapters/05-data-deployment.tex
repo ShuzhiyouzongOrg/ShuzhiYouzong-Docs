@@ -185,7 +185,7 @@ Electron主进程启动时先把\textbf{可写数据库、知识和运行配置}
   \begin{minipage}[t]{0.47\textwidth}
     \centering
     \IfFileExists{assets/screenshots/android.png}{%
-      \includegraphics[height=0.34\textheight,keepaspectratio]{android.png}%
+      \includegraphics[height=0.36\textheight,keepaspectratio]{android.png}%
     }{%
       \begin{tikzpicture}
         \draw[rounded corners=4pt,very thick,guideTeal,fill=guideTealLight] (0,0) rectangle (6.4,9.2);
@@ -198,7 +198,7 @@ Electron主进程启动时先把\textbf{可写数据库、知识和运行配置}
   \begin{minipage}[t]{0.47\textwidth}
     \centering
     \IfFileExists{assets/screenshots/wechat-miniproject.png}{%
-      \includegraphics[height=0.34\textheight,keepaspectratio]{wechat-miniproject.png}%
+      \includegraphics[height=0.36\textheight,keepaspectratio]{wechat-miniproject.png}%
     }{%
       \begin{tikzpicture}
         \draw[rounded corners=4pt,very thick,guideGold,fill=guideGoldLight] (0,0) rectangle (6.4,9.2);
@@ -246,13 +246,19 @@ Electron主进程启动时先把\textbf{可写数据库、知识和运行配置}
   \centering
   \begin{minipage}{\textwidth}
     \centering
-    \includegraphics[width=0.72\textwidth]{website-preview-home.png}
+    \begin{tikzpicture}
+      \node[inner sep=0pt,drop shadow={opacity=0.16,shadow xshift=1.2pt,shadow yshift=-1.2pt}]
+        {\includegraphics[width=0.72\textwidth]{website-preview-home.png}};
+    \end{tikzpicture}
     \captionof{figure}{项目介绍网站首页真实运行页面图}\label{fig:website-preview-home}
   \end{minipage}
 
   \begin{minipage}{\textwidth}
     \centering
-    \includegraphics[width=0.72\textwidth]{website-preview-docs.png}
+    \begin{tikzpicture}
+      \node[inner sep=0pt,drop shadow={opacity=0.16,shadow xshift=1.2pt,shadow yshift=-1.2pt}]
+        {\includegraphics[width=0.72\textwidth]{website-preview-docs.png}};
+    \end{tikzpicture}
     \captionof{figure}{项目介绍文档站真实运行页面图}\label{fig:website-preview-docs}
   \end{minipage}
 \end{figure}
