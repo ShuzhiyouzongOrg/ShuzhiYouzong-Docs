@@ -54,3 +54,57 @@
     \bottomrule
   \end{tabularx}
 \end{table}
+
+\newpage
+\section{数字人的双端兜底创新}
+
+本项目在选型时把\textbf{讯飞交互式数字人主路径}写在前面，再以\textbf{Live2D本地模型和纯文本/音频输出}承接不同运行环境。云端路径适合Web与桌面大屏：Web SDK通过HTTPS/WSS或WebRTC获得高表现力视频、情绪和口型；桌面端复用同一Web界面，凭证和网络条件满足时即可保持一致体验。游客移动端按平台能力分层：Android、iOS和HarmonyOS使用受控HTTPS WebView承载动态形象，微信个人主体因业务域名和原生XRTC限制采用本地呼吸/播报动画与讯飞云音色，不把受限能力硬塞进小程序。
+
+兜底的关键不是“失败后偷偷换一个人物”，而是\textbf{业务接口不变、运行状态透明、切换动作可解释}。管理端配置保存\filepath{engine}、形象ID或模型ID、VCN、欢迎语和服务状态；调度器只向页面暴露\filepath{speak}、\filepath{interrupt}等稳定方法。在线形象失败时，现场人员可以将启用配置切换为Live2D；若TTS或本地模型也不可用，则保留文本、引用和路线，并显示降级阶段。这样在GPU不足、网络弱、云端额度耗尽、WebView能力受限和演示终端差异之间取得平衡：云端成本只用于增强沉浸表达，本地资源负责最低连续服务。
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{数字人双端兜底的环境--能力--体验映射表}\label{tab:digital-human-fallback}
+  \begin{tabularx}{\textwidth}{p{0.22\textwidth}p{0.28\textwidth}X}
+    \toprule
+    运行环境或故障 & 优先路径 & 保底输出与用户体验 \\
+    \midrule
+    Web/桌面且网络与凭证正常 & 讯飞Web SDK + 云端TTS/口型/情绪 & 高表现力视频讲解，页面保持引用和时延信息 \\
+    Web/桌面弱网、额度或SDK异常 & 管理端切换Live2D，本地模型 + 服务端TTS & 本地画布与音频口型继续播报，避免黑屏 \\
+    Android/iOS/HarmonyOS WebView受控 & 受控HTTPS WebView动态形象 & 与服务端问答复用；WebView状态异常时回本地TTS/文本 \\
+    微信个人主体或业务域名受限 & 本地呼吸/播报动画 + 讯飞云音色 & 不请求受限动态WebView，核心问答和音频仍可用 \\
+    TTS或本地模型均不可用 & 纯文本与引用/路线模式 & 明确提示降级原因，游客仍能查景点、看路线和提交反馈 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{地图的双端兜底创新}
+
+地图层把\textbf{在线地理语义}和\textbf{景区本地资产}分工：Web在线优先加载腾讯地图JS GL，Leaflet与手绘图是同一地图状态的本地承接；游客多端在原生\texttt{<map>}与本地手绘图之间切换，GPS/\texttt{uni.getLocation}只作为位置输入。即使腾讯Key失效、SDK加载异常、地图引擎在模拟器上不可用或山谷弱网造成底图空白，游客仍可看到点位、路线编号、搜索结果和景点详情。
+
+该设计的工程价值是\textbf{地图提供者故障不会扩散为业务故障}：统一的景点ID、路线节点、选中状态和讲解入口位于业务层，渲染端切换只替换底图与坐标投影。GPS不能被误写成完整导航，当前实现覆盖主动定位、当前位置居中和最近点匹配；连续轨迹、自动到点播报和蓝牙信标需要额外的权限、电量、现场标定和安全评估。
+
+\section{多端发布本身就是工程创新}
+
+Web、三类Electron桌面系统、Android APK、微信小程序和HarmonyOS HAP共享同一服务合同，却分别处理端口、安装目录、包体、权限、WebView、录音、地图和签名边界。Windows、Linux、macOS不是“浏览器套壳截图”，而是完成了NSIS、AppImage/DEB、x64/arm64 DMG的构建目标和发布下载入口；移动端也不是“未来规划”，APK、小程序和HAP已经形成可安装或可导入的交付物。多端架构把一次景区业务投入转化为游客手机、游客中心大屏、运营工作站和离线终端均可承接的产品覆盖面。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[core] (api) at (0,0) {Node API\\问答/语音/地图/路线};
+    \node[coregold] (web) at (4.1,1.7) {Web\\腾讯+Leaflet};
+    \node[coregold] (desk) at (8.3,1.7) {Windows/Linux/macOS\\Electron};
+    \node[coregold] (mobile) at (4.1,-1.7) {Android/iOS/Harmony\\uni-app x};
+    \node[core] (wechat) at (8.3,-1.7) {微信小程序\\分包+本地数字人};
+    \draw[flowgold] (api.north east) to[out=25,in=220] (web.south west);
+    \draw[flowgold] (api.north east) to[out=10,in=220] (desk.south west);
+    \draw[flow] (api.south east) to[out=-25,in=140] (mobile.north west);
+    \draw[flow] (api.south east) to[out=-10,in=140] (wechat.north west);
+    \node[side] at (12.2,0) {共同数据\\景点/路线/会话/反馈};
+    \draw[curved] (desk.east) -- (12.2,0);
+    \draw[curved] (wechat.east) -- (12.2,0);
+  \end{tikzpicture}}
+  \caption{多端发布共享业务合同、分层适配终端能力}\label{fig:multiplatform-innovation}
+\end{figure}
