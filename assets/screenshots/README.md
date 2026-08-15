@@ -4,9 +4,9 @@
 
 建议资源：
 
-- `web-digital-human.webp`：Web 游客端数字人、答案、引用与语音状态，建议 16:9 或 4:3。
-- `web-scenic-map.webp`：Web 腾讯地图/Leaflet 手绘地图切换，建议 16:9。
-- `web-operations-dashboard.webp`：Web 管理端运营大屏，建议 16:9。
+- `web-digital-human.png`：Web 游客端数字人、答案、引用与语音状态，建议 16:9 或 4:3。
+- `web-scenic-map.png`：Web 腾讯地图/Leaflet 手绘地图切换，建议 16:9。
+- `web-operations-dashboard.png`：Web 管理端运营大屏，建议 16:9。
 - `visitor-android-home.png`：Android APK 首页或 AI 导游页，建议 9:16。
 - `visitor-wechat-map.png`：微信小程序地图页，建议 9:16。
 - `visitor-harmony-home.jpeg`、`visitor-harmony-map.jpeg`、`visitor-harmony-ai.jpeg`：鸿蒙 HAP 运行截图，建议 9:16。
