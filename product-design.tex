@@ -6,8 +6,8 @@
 \subtitle{A5赛题}
 \author{张婧瑜\quad 季祥\quad 林骏毅}
 \institute{泉州信息工程学院——数智游踪队}
-\date{July 16, 2026}
-\version{v2.0.0}
+\date{August 15, 2026}
+\version{v2.1.0}
 \bioinfo{指导老师}{陈子淮}
 \extrainfo{禅意灵山·智慧同行——AI 数字人为您讲解景点、规划路线、答疑解惑}
 \cover{figures/cover.png}
@@ -38,6 +38,7 @@
 \usepackage{enumitem}
 \usepackage{caption}
 \usepackage{url}
+\usepackage{pdflscape}
 
 \graphicspath{{figure/}{figures/}{figures/drawio/}{assets/screenshots/}}
 \ExecuteBibliographyOptions{sorting=none}
@@ -127,9 +128,9 @@
 
     数字人层采用讯飞云端流式数字人与本地\textbf{Live2D}双引擎模型：云端引擎负责WebRTC视频、TTS、口型和情绪表达，本地引擎通过Cubism画布、后端TTS和Web Audio振幅分析驱动口型。管理端提供形象与音色折叠式快捷选择，同时保留形象ID、模型ID、VCN、语速、欢迎语、情绪风格和服务状态等精细参数；启用配置实时下发游客端，统一调度器对外保持相同的播报、解锁音频与打断接口。
 
-    当前工程已实现游客导览、管理登录、知识管理、数字人配置、路线推荐、会话反馈、运营大屏和质量修正等完整功能。其中，全局五语言国际化和双引擎数字人模型使同一套导览业务既能面向不同语言游客一致呈现，也能在云端数字人不可用时切换本地形象继续服务。项目测试覆盖\textbf{50}条标准问答和\textbf{20}条检索用例，前端类型检查、生产构建、数字人、并发与降级测试均通过。
+    当前工程已实现游客导览、管理登录、知识管理、数字人配置、路线推荐、会话反馈、运营大屏和质量修正等完整功能。Web 端地图采用腾讯地图 JS GL 与 Leaflet 手绘地图双路径，游客多端进一步采用原生地图、GPS 定位与本地手绘图组合；全局五语言国际化和双引擎数字人模型使同一套导览业务既能面向不同语言游客一致呈现，也能在云端数字人不可用时切换本地形象继续服务。除 Web 外，Windows、Linux、macOS 桌面安装包以及 Android APK、微信小程序和鸿蒙 HAP 均已完成构建或发布验证。项目测试覆盖\textbf{50}条标准问答和\textbf{20}条检索用例，前端类型检查、生产构建、数字人、并发与降级测试均通过。
 
-    \noindent\textbf{关键词：}景区导览；AI数字人；国际化；双引擎模型；检索增强生成；多模态交互
+    \noindent\textbf{关键词：}景区导览；AI数字人；双端兜底；多端发布；地图导览；检索增强生成；多模态交互
   \endgroup
 }
 
