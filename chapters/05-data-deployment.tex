@@ -144,7 +144,7 @@ SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、�
 
 \subsection{桌面端一体化运行时}
 
-Electron主进程启动时先把可写数据库、知识和运行配置准备到\filepath{app.getPath("userData")}下的runtime目录，再以\filepath{127.0.0.1}和动态端口启动随包Node服务；只有\filepath{/api/health}通过后才加载主窗口。导航白名单仅允许当前回环源，外部链接交给系统浏览器。该设计避免固定端口冲突，也避免把SQLite写入只读安装目录；Windows NSIS、Linux AppImage/DEB与macOS DMG复用同一启动门禁和\filepath{node:sqlite}适配器。
+Electron主进程启动时先把\textbf{可写数据库、知识和运行配置}准备到\filepath{app.getPath("userData")}下的runtime目录，再以\filepath{127.0.0.1}和动态端口启动随包Node服务；只有\filepath{/api/health}通过后才加载主窗口。导航白名单仅允许当前回环源，外部链接交给系统浏览器。该设计避免固定端口冲突，也避免把SQLite写入只读安装目录；\textbf{Windows NSIS、Linux AppImage/DEB与macOS DMG}复用同一启动门禁和\filepath{node:sqlite}适配器。
 
 \begin{figure}[H]
   \centering
@@ -168,8 +168,9 @@ Electron主进程启动时先把可写数据库、知识和运行配置准备到
 \newpage
 \subsection{移动游客端的构建与发布}
 
-移动游客端采用uni-app x Vapor与HBuilderX构建，同一工程已完成H5、微信小程序、Android APK和HarmonyOS HAP发布，并通过iOS模拟器目标编译。各端共享景点、路线、会话和反馈接口，同时分别适配录音授权、系统定位、原生地图、WebView与文件访问。Android端完成原生资源、UTS字节码和APK打包；HarmonyOS端完成UTS、ArkTS、CMake/Ninja、资源处理与HAP打包；微信端按主包与分包组织页面和本地资源。iOS端已具备模拟器运行版本，后续正式发布可继续接入macOS/Xcode签名流程。
+移动游客端采用\textbf{uni-app x Vapor与HBuilderX}构建，同一工程已完成\textbf{H5、微信小程序、Android APK和HarmonyOS HAP}发布，并通过iOS模拟器目标编译。各端共享景点、路线、会话和反馈接口，同时分别适配录音授权、系统定位、原生地图、WebView与文件访问。Android端完成原生资源、UTS字节码和APK打包；HarmonyOS端完成UTS、ArkTS、CMake/Ninja、资源处理与HAP打包；微信端按主包与分包组织页面和本地资源。iOS端已具备模拟器运行版本，后续正式发布可继续接入macOS/Xcode签名流程。
 
+\par\bigskip
 \noindent\textit{构建入口：}\filepath{desktop/package.json}与\filepath{visitor-app/README.md}。
 \lstinputlisting[style=projectcode,language={},firstnumber=1,
   caption={桌面与游客多端真实构建命令摘录},label={lst:platform-builds}]
@@ -177,7 +178,7 @@ Electron主进程启动时先把可写数据库、知识和运行配置准备到
 
 \subsection{多端发布成果}
 
-项目目前已经形成覆盖Web、Windows、Linux、macOS、Android、微信小程序和HarmonyOS的发布体系。桌面端提供Windows安装程序、Linux AppImage/DEB及macOS DMG，移动游客端提供Android APK、微信小程序和HarmonyOS HAP；项目介绍网站同时提供对应平台的下载与使用入口。各端均接入真实景区数据、AI问答、路线、地图和用户反馈能力，可根据游客手机、游客中心大屏或运营工作站等终端直接部署。面向应用商店或正式生产环境发布时，再按平台要求补充签名、审核和自动更新配置。
+项目目前已经形成覆盖\textbf{Web、Windows、Linux、macOS、Android、微信小程序和HarmonyOS}的发布体系。桌面端提供Windows安装程序、Linux AppImage/DEB及macOS DMG，移动游客端提供Android APK、微信小程序和HarmonyOS HAP；项目介绍网站同时提供对应平台的下载与使用入口。各端均接入\textbf{真实景区数据、AI问答、路线、地图和用户反馈能力}，可根据游客手机、游客中心大屏或运营工作站等终端直接部署。面向应用商店或正式生产环境发布时，再按平台要求补充签名、审核和自动更新配置。
 
 \begin{figure}[H]
   \centering
@@ -230,12 +231,12 @@ Electron主进程启动时先把可写数据库、知识和运行配置准备到
   \caption{三类桌面端规范截图位置}\label{fig:desktop-placeholders}
 \end{figure}
 
-以上截图取自当前Android、微信小程序及Windows、Linux、macOS构建结果，并保留系统标题栏或状态栏作为平台证据；后续替换同名PNG时，图号、标题和版面仍保持不变。截图发布前需继续避免展示密钥、个人账号、绝对用户路径等敏感信息。
+以上截图取自当前\textbf{Android、微信小程序及Windows、Linux、macOS构建结果}，并保留系统标题栏或状态栏，便于区分各端的实际运行环境。桌面端围绕同一套Electron业务界面完成安装、启动与本地服务衔接，移动端则在共享景点、路线、会话和反馈接口的基础上，分别适配触控交互、系统定位、录音授权、原生地图与WebView。由此，同一套景区业务可以覆盖\textbf{游客手机、游客中心大屏和运营工作站}，并保持功能口径与数据结构一致。
 
 \newpage
 \subsection{项目介绍网站展示}
 
-项目介绍网页\url{https://www.shuzhiyouzong.cn/website-preview/}承担对外产品说明和成果展示职责。首页以“让每一步游览，都有智能相伴”为主叙事，集中呈现AI数字人、可信知识问答、腾讯地图与Leaflet双底图、个性化路线、运营闭环和多端下载入口；它面向评审、景区合作方和游客，先解释产品价值，再引导在线体验或获取客户端。图\ref{fig:website-preview-home}为当前线上页面的首屏截图，截图来自已上线网页而非静态概念稿。
+项目介绍网页\url{https://www.shuzhiyouzong.cn/website-preview/}承担\textbf{对外产品说明和成果展示}职责。首页以“让每一步游览，都有智能相伴”为主叙事，集中呈现AI数字人、可信知识问答、腾讯地图与Leaflet双底图、个性化路线、运营闭环和多端下载入口；它面向评审、景区合作方和游客，先解释产品价值，再引导在线体验或获取客户端。图\ref{fig:website-preview-home}为当前线上页面的首屏截图，截图来自\textbf{已上线网页}而非静态概念稿。
 
 \subsection{项目介绍文档站展示}
 
@@ -243,14 +244,15 @@ Electron主进程启动时先把可写数据库、知识和运行配置准备到
 
 \begin{figure}[H]
   \centering
-  \begin{minipage}[t]{0.48\textwidth}
+  \begin{minipage}{\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{website-preview-home.png}
+    \includegraphics[width=0.72\textwidth]{website-preview-home.png}
     \captionof{figure}{项目介绍网站首页真实运行页面图}\label{fig:website-preview-home}
-  \end{minipage}\hfill
-  \begin{minipage}[t]{0.48\textwidth}
+  \end{minipage}
+
+  \begin{minipage}{\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{website-preview-docs.png}
+    \includegraphics[width=0.72\textwidth]{website-preview-docs.png}
     \captionof{figure}{项目介绍文档站真实运行页面图}\label{fig:website-preview-docs}
   \end{minipage}
 \end{figure}
