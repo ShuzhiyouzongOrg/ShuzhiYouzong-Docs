@@ -31,7 +31,7 @@ _minted-*/
 $build/
 $out/
 
-# Historical root-level PDF names; source PDFs under figures/ remain trackable
+# Historical root-level PDF names; source PDFs under assets/figures/ remain trackable
 /product-design.pdf
 /项目技术文档（参考）.pdf
 

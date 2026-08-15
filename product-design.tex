@@ -7,11 +7,11 @@
 \author{张婧瑜\quad 季祥\quad 林骏毅}
 \institute{泉州信息工程学院——数智游踪队}
 \date{August 15, 2026}
-\version{v2.1.0}
+\version{v3.1.0}
 \bioinfo{指导老师}{陈子淮}
 \extrainfo{禅意灵山·智慧同行——AI 数字人为您讲解景点、规划路线、答疑解惑}
-\cover{figures/cover.png}
-\logo{figures/logo.png}
+\cover{assets/figures/cover.png}
+\logo{assets/figures/logo.png}
 \hypersetup{
   pdftitle={数智游踪——智慧景区沉浸式AI导览助手},
   pdfauthor={张婧瑜、季祥、林骏毅},
@@ -19,7 +19,8 @@
   pdfkeywords={数智游踪, 智慧景区, AI导览, 数字人}
 }
 
-\setcounter{tocdepth}{2}
+% 目录只展开章（一级）与节（二级），保留正文三级标题编号但不在目录中展开。
+\setcounter{tocdepth}{1}
 \setcounter{secnumdepth}{3}
 \raggedbottom
 
@@ -40,7 +41,7 @@
 \usepackage{url}
 \usepackage{pdflscape}
 
-\graphicspath{{figure/}{figures/}{figures/drawio/}{assets/screenshots/}}
+\graphicspath{{assets/figures/}{assets/figures/drawio/}{assets/image/}{assets/screenshots/}}
 \ExecuteBibliographyOptions{sorting=none}
 \floatname{algorithm}{算法}
 \renewcommand{\algorithmicrequire}{\textbf{输入：}}

@@ -2,7 +2,7 @@
 
 \section{知识数据设计}
 
-知识构建脚本读取\textbf{官方DOCX资料和经整理的多语言Markdown资料}，解析结构化景点和导览章节，再生成景点实体、知识分块与来源元数据。每个分块保留文档名、章节、景点标识、正文、关键词和语言，使检索结果能够形成\textbf{可读引用}。2026年8月8日生成的当前快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个知识分块}；主景区与子景区通过\filepath{scenicArea}字段区分。地图中的高密度点位和道路轨迹属于地图数据，不与RAG景点实体数量混算。
+知识构建脚本读取\textbf{官方DOCX资料和经整理的多语言Markdown资料}，解析结构化景点和导览章节，再生成景点实体、知识分块与来源元数据。每个分块保留文档名、章节、景点标识、正文、关键词和语言，使检索结果能够形成\textbf{可读引用}。当前快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个知识分块}；主景区与子景区通过\filepath{scenicArea}字段区分。地图中的高密度点位和道路轨迹属于地图数据，不与RAG景点实体数量混算。
 
 \begin{table}[H]
   \centering
@@ -24,8 +24,8 @@
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{figures/knowledge-console.png}{%
-    \includegraphics[width=0.95\textwidth]{figures/knowledge-console.png}%
+  \IfFileExists{assets/figures/knowledge-console.png}{%
+    \includegraphics[width=0.62\textwidth]{assets/figures/knowledge-console.png}%
   }{%
     \begin{tikzpicture}[x=1cm,y=1cm]
       \draw[rounded corners=5pt,very thick,guideTeal,fill=guideTealLight] (0,0) rectangle (14.2,6.6);
@@ -84,7 +84,32 @@ SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、�
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.98\textwidth]{deployment-topology.pdf}
+  \resizebox{0.98\textwidth}{!}{%
+  \begin{tikzpicture}[x=1cm,y=1cm]
+    \node[font=\bfseries,text=guideTeal] at (5.7,4.1) {多端访问层};
+    \node[core,minimum width=2.55cm] (web) at (0,3.0) {Web/H5\\游客端与管理站};
+    \node[core,minimum width=2.55cm] (desktop) at (3.8,3.0) {Windows/Linux/macOS\\Electron安装包};
+    \node[core,minimum width=2.55cm] (mobile) at (7.6,3.0) {Android/微信\\APK与小程序};
+    \node[core,minimum width=2.55cm] (harmony) at (11.4,3.0) {HarmonyOS/iOS\\HAP与模拟器目标};
+
+    \node[coregold,minimum width=10.8cm,minimum height=1.35cm] (runtime) at (5.7,1.0)
+      {Node.js同源运行时（景区/云主机或Electron内置）\\
+       Web静态资源与SPA回退 · \texttt{/api}与SSE · 鉴权/日志/健康检查 · 业务与云适配器};
+
+    \node[core,minimum width=5.1cm,minimum height=2.05cm] (local) at (2.7,-1.35)
+      {本地数据与连续服务\\SQLite 12张业务表 · JSON知识快照\\22景点/107分块 · Live2D/手绘地图\\\filepath{DEMO_MODE}确定性链路};
+    \node[side,minimum width=5.1cm,minimum height=2.05cm] (cloud) at (8.7,-1.35)
+      {按需云能力\\OpenAI兼容大模型 · 讯飞ASR/TTS\\讯飞交互式数字人 · 腾讯地图JS GL\\HTTPS/WSS/WebRTC};
+
+    \draw[flow] (web.south) -- ($(runtime.north)+(-4.1,0)$);
+    \draw[flow] (desktop.south) -- ($(runtime.north)+(-1.4,0)$);
+    \draw[flow] (mobile.south) -- ($(runtime.north)+(1.4,0)$);
+    \draw[flow] (harmony.south) -- ($(runtime.north)+(4.1,0)$);
+    \draw[flowgold] ($(runtime.south)+(-2.5,0)$) -- node[left,font=\scriptsize]{文件/SQLite} (local.north);
+    \draw[curved] ($(runtime.south)+(2.5,0)$) -- node[right,font=\scriptsize]{HTTPS/WSS} (cloud.north);
+    \draw[curved,dashed] (cloud.south west) to[out=225,in=315]
+      node[below,font=\scriptsize]{云能力异常时回退本地形象、手绘地图与文本链路} (local.south east);
+  \end{tikzpicture}}
   \caption{系统单机同源与云能力部署拓扑图}\label{fig:deployment}
 \end{figure}
 
@@ -140,6 +165,7 @@ Electron主进程启动时先把可写数据库、知识和运行配置准备到
   \caption{Windows、Linux与macOS桌面端一体化启动流程图}\label{fig:desktop-runtime}
 \end{figure}
 
+\newpage
 \subsection{移动游客端的构建与发布边界}
 
 HBuilderX CLI对Web、微信、Android、iOS模拟器和HarmonyOS执行分平台严格编译。Android“编译成功”与“形成APK”在工具链中是两个阶段：本项目除完成原生资源与字节码编译外，已进一步产出版本号102的APK。HarmonyOS则完成UTS、ArkTS、CMake/Ninja、资源和HAP全链构建；微信端在包体和主体能力边界内完成主包/分包发布。iOS当前证据只覆盖模拟器目标编译，因此文档明确保留签名和发行边界，不把它与已发布的APK、微信小程序和HAP混写。
@@ -157,36 +183,36 @@ HBuilderX CLI对Web、微信、Android、iOS模拟器和HarmonyOS执行分平台
   \centering
   \begin{minipage}[t]{0.47\textwidth}
     \centering
-    \IfFileExists{assets/screenshots/visitor-android-home.png}{%
-      \includegraphics[height=0.40\textheight]{visitor-android-home.png}%
+    \IfFileExists{assets/screenshots/android.png}{%
+      \includegraphics[height=0.34\textheight,keepaspectratio]{android.png}%
     }{%
       \begin{tikzpicture}
         \draw[rounded corners=4pt,very thick,guideTeal,fill=guideTealLight] (0,0) rectangle (6.4,9.2);
         \node[font=\bfseries,text=guideTeal] at (3.2,8.45) {Android APK截图占位};
-        \node[align=center,text=guideGray,font=\small] at (3.2,5.0) {建议：安装后的首页或AI导游页\\文件名：visitor-android-home.png\\展示：系统状态栏、五Tab与数字人\\推荐比例：9:19.5竖屏};
+        \node[align=center,text=guideGray,font=\small] at (3.2,5.0) {建议：安装后的首页或AI导游页\\文件名：android.png\\展示：系统状态栏、五Tab与数字人\\推荐比例：9:19.5竖屏};
       \end{tikzpicture}%
     }
-    \small Android APK运行效果
+    \par\small\mbox{Android APK运行结果}
   \end{minipage}\hfill
   \begin{minipage}[t]{0.47\textwidth}
     \centering
-    \IfFileExists{assets/screenshots/visitor-wechat-home.png}{%
-      \includegraphics[height=0.40\textheight]{visitor-wechat-home.png}%
+    \IfFileExists{assets/screenshots/wechat-miniproject.png}{%
+      \includegraphics[height=0.34\textheight,keepaspectratio]{wechat-miniproject.png}%
     }{%
       \begin{tikzpicture}
         \draw[rounded corners=4pt,very thick,guideGold,fill=guideGoldLight] (0,0) rectangle (6.4,9.2);
         \node[font=\bfseries,text=guideGold] at (3.2,8.45) {微信小程序截图占位};
-        \node[align=center,text=guideGray,font=\small] at (3.2,5.0) {建议：真机地图或AI导游页\\文件名：visitor-wechat-home.png\\展示：胶囊按钮、分包页面与本地数字人\\推荐比例：9:19.5竖屏};
+        \node[align=center,text=guideGray,font=\small] at (3.2,5.0) {建议：真机地图或AI导游页\\文件名：wechat-miniproject.png\\展示：胶囊按钮、分包页面与本地数字人\\推荐比例：9:19.5竖屏};
       \end{tikzpicture}%
     }
-    \small 微信小程序运行效果
+    \par\small\mbox{微信小程序运行效果}
   \end{minipage}
   \caption{Android与微信游客端规范截图位置}\label{fig:mobile-placeholders}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \foreach \shotname/\osname/\shotdesc in {desktop-windows-launch.png/Windows/NSIS安装后主界面,desktop-linux-launch.png/Linux/AppImage或DEB启动,desktop-macos-launch.png/macOS/DMG启动与系统标题栏}{%
+  \foreach \shotname/\osname/\shotdesc in {Windows.png/Windows/NSIS安装后主界面,Linux.png/Linux/AppImage或DEB启动,Mac.png/macOS/DMG启动与系统标题栏}{%
     \begin{minipage}[t]{0.31\textwidth}
       \centering
       \IfFileExists{assets/screenshots/\shotname}{%
@@ -204,4 +230,27 @@ HBuilderX CLI对Web、微信、Android、iOS模拟器和HarmonyOS执行分平台
   \caption{三类桌面端规范截图位置}\label{fig:desktop-placeholders}
 \end{figure}
 
-未来补图时只需将同名PNG放入\filepath{assets/screenshots}：LaTeX会自动以真实截图替换占位框，图号、标题和版面均保持不变。截图应保留系统标题栏或状态栏作为平台证据，同时避免展示密钥、个人账号、绝对用户路径等敏感信息。
+以上截图取自当前Android、微信小程序及Windows、Linux、macOS构建结果，并保留系统标题栏或状态栏作为平台证据；后续替换同名PNG时，图号、标题和版面仍保持不变。截图发布前需继续避免展示密钥、个人账号、绝对用户路径等敏感信息。
+
+\newpage
+\subsection{项目介绍网站展示}
+
+项目介绍网页\url{https://www.shuzhiyouzong.cn/website-preview/}承担对外产品说明和成果展示职责。首页以“让每一步游览，都有智能相伴”为主叙事，集中呈现AI数字人、可信知识问答、腾讯地图与Leaflet双底图、个性化路线、运营闭环和多端下载入口；它面向评审、景区合作方和游客，先解释产品价值，再引导在线体验或获取客户端。图\ref{fig:website-preview-home}为当前线上页面的首屏截图，截图来自已上线网页而非静态概念稿。
+
+\subsection{项目介绍文档站展示}
+
+介绍网页文档站\url{https://www.shuzhiyouzong.cn/website-preview/docs}提供产品、部署、操作和技术决策的分层说明。文档站将“数智游踪是什么、适用角色与场景、核心服务闭环、已接入数据范围、能力边界”组织为可导航章节，并继续链接安装部署、使用操作和技术选型页面；它与本技术文档形成\textbf{展示层—操作层—工程层}的互补关系，便于评委从项目定位快速进入真实部署细节。图\ref{fig:website-preview-docs}为当前线上文档站首页截图。
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{website-preview-home.png}
+    \captionof{figure}{项目介绍网站首页真实运行页面图}\label{fig:website-preview-home}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{website-preview-docs.png}
+    \captionof{figure}{项目介绍文档站真实运行页面图}\label{fig:website-preview-docs}
+  \end{minipage}
+\end{figure}

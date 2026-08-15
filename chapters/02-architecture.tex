@@ -6,7 +6,7 @@
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.98\textwidth]{system-architecture.pdf}
+  \includegraphics[width=0.98\textwidth]{system-architecture.png}
   \caption{数智游踪系统总体架构图}\label{fig:overall-architecture}
 \end{figure}
 
@@ -28,11 +28,10 @@
 
 \begin{figure}[H]
   \centering
-  \includegraphics[height=0.70\textheight,keepaspectratio]{technical-route.pdf}
+  \includegraphics[height=0.52\textheight,width=0.94\textwidth,keepaspectratio]{technical-route.png}
   \caption{数智游踪整体技术路线图}\label{fig:technical-route}
 \end{figure}
 
-\newpage
 \section{技术选型}
 
 \begin{table}[H]
@@ -56,10 +55,12 @@
 
 本项目的技术选型以\textbf{“先保证景区核心导览可用，再增强沉浸表达”}为顺序。景区现场与普通互联网产品不同：山地和园区存在弱网、遮挡和定位漂移，游客设备的GPU、麦克风权限和浏览器能力差异明显，旺季并发又会放大云端API费用。因此本节将\textbf{部署难度、本地化能力、云端依赖、实时性、硬件要求、API/服务成本、并发成本、网络依赖、跨平台能力、景区实际部署成本、维护成本和用户体验}作为统一比较维度。表中第一行均为当前项目采用方案；其余方案不是被简单否定，而是说明在什么条件下更合适，以及为什么没有成为本项目的主路径。
 
+数字人和TTS的组合不是简单叠加。讯飞云端形象负责“看起来像在讲解”，讯飞TTS负责“声音可控且能被其他端复用”，Live2D与浏览器原生TTS负责在网络、额度或终端能力不足时保住\textbf{文本—音频—口型}的最小闭环。这样做的工程代价是需要维护音频队列、打断和状态映射，但换来的是景区现场可以明确解释当前引擎与降级阶段，而不是出现无反馈的黑屏或无声。
+
 \begin{landscape}
 \begin{table}[H]
   \centering
-  \caption{数字人方案横向比较（本项目选型置前）}\label{tab:compare-digital-human}
+  \caption{数字人方案横向比较}\label{tab:compare-digital-human}
   \small
   \renewcommand{\arraystretch}{1.18}
   \begin{tabularx}{\linewidth}{p{0.13\linewidth}p{0.16\linewidth}p{0.16\linewidth}p{0.14\linewidth}p{0.14\linewidth}X}
@@ -68,8 +69,8 @@
     \midrule
     \textbf{讯飞交互式数字人 + Live2D（采用）} & 云端SDK快速接入；Live2D模型、Cubism与音频口型可随Web/桌面包本地部署 & 云端形象按账号、形象权限和调用额度计费；Live2D不产生视频流API费用 & 云端WebRTC表现力高；本地路径主要依赖WebGL、音频分析，不要求独立GPU & Web/桌面共用调度契约；游客端按WebView、原生和小程序能力分层，配置替换集中 & 以在线效果承载演示，以本地形象和文本兜底，平衡体验、网络和现场成本 \\
     MuseTalk & 可自建推理服务，模型和推理链路可控；需准备模型权重、推理服务和视频/音频管线 & 本地无按次API费，但需要GPU服务器、电费和模型运维；高并发需扩容推理副本 & 通常需要较强GPU与显存才能维持可接受帧率；弱设备端不适合直接推理 & 服务端封装复杂，移动端通常仍需远端推理；模型、驱动和版本维护负担较大 & 适合有GPU集群和高质量视频生产需求的场景，不作为本项目景区边缘终端首选 \\
-    Live2D（单独采用） & 资源随前端静态部署，素材和运行时可版本化；本地化程度高 & 无云端数字人调用费，但音频仍可能依赖TTS服务；模型素材需授权和持续维护 & WebGL与音频振幅驱动实时性好，普通办公机和手机可运行 & 跨Web/桌面较成熟；小程序和原生需分别适配渲染容器与音频权限 & 是本项目的低成本备用引擎，但单独使用时沉浸式视频表现不如云端形象 \\
     DUIX & 依赖其运行环境、SDK或服务形态，具体本地部署条件需按授权版本确认 & 若采用云端服务需承担账号与调用成本；私有化则增加部署与授权成本 & 能力与实时性取决于SDK版本、终端和网络；不能假设所有终端一致 & 厂商适配和版本升级需跟随生态；跨端边界需逐端验收 & 可作为供应商备选，但当前代码未接入，不能写成已实现主路径 \\
+    Live2D（单独采用） & 资源随前端静态部署，素材和运行时可版本化；本地化程度高 & 无云端数字人调用费，但音频仍可能依赖TTS服务；模型素材需授权和持续维护 & WebGL与音频振幅驱动实时性好，普通办公机和手机可运行 & 跨Web/桌面较成熟；小程序和原生需分别适配渲染容器与音频权限 & 是本项目的低成本备用引擎，但单独使用时沉浸式视频表现不如云端形象 \\
     讯飞云端数字人（单一云端） & 接入路径清晰，主要工作集中在凭证、WebRTC和容器管理 & 形象/音色/并发/网络均受服务额度和账号影响；旺季成本随调用量线性增长 & 在线首帧和口型表现较好，但弱网、额度耗尽或域名限制会直接影响体验 & Web端较顺；小程序个人主体、原生WebView和桌面离线环境需要额外适配 & 适合作为主引擎，但必须保留Live2D/文本兜底才满足景区连续服务要求 \\
     \bottomrule
   \end{tabularx}
@@ -77,7 +78,7 @@
 
 \begin{table}[H]
   \centering
-  \caption{TTS方案横向比较（本项目选型置前）}\label{tab:compare-tts}
+  \caption{TTS方案横向比较}\label{tab:compare-tts}
   \small
   \renewcommand{\arraystretch}{1.18}
   \begin{tabularx}{\linewidth}{p{0.16\linewidth}p{0.17\linewidth}p{0.17\linewidth}p{0.15\linewidth}p{0.15\linewidth}X}
@@ -94,12 +95,10 @@
 \end{table}
 \end{landscape}
 
-数字人和TTS的组合不是简单叠加。讯飞云端形象负责“看起来像在讲解”，讯飞TTS负责“声音可控且能被其他端复用”，Live2D与浏览器原生TTS负责在网络、额度或终端能力不足时保住\textbf{文本—音频—口型}的最小闭环。这样做的工程代价是需要维护音频队列、打断和状态映射，但换来的是景区现场可以明确解释当前引擎与降级阶段，而不是出现无反馈的黑屏或无声。
-
 \begin{landscape}
 \begin{table}[H]
   \centering
-  \caption{ASR方案横向比较（本项目选型置前）}\label{tab:compare-asr}
+  \caption{ASR方案横向比较}\label{tab:compare-asr}
   \small
   \renewcommand{\arraystretch}{1.18}
   \begin{tabularx}{\linewidth}{p{0.16\linewidth}p{0.18\linewidth}p{0.17\linewidth}p{0.15\linewidth}p{0.15\linewidth}X}
@@ -116,7 +115,7 @@
 
 \begin{table}[H]
   \centering
-  \caption{地图与定位方案横向比较（本项目选型置前）}\label{tab:compare-map}
+  \caption{地图与定位方案横向比较}\label{tab:compare-map}
   \small
   \renewcommand{\arraystretch}{1.18}
   \begin{tabularx}{\linewidth}{p{0.16\linewidth}p{0.18\linewidth}p{0.17\linewidth}p{0.15\linewidth}p{0.15\linewidth}X}
@@ -145,6 +144,31 @@ Web端的真实实现是\textbf{Leaflet先创建地图容器，在线且Key有�
 \end{enumerate}
 
 结论不是“所有备选方案都不适用”，而是\textbf{当前项目规模、景区部署条件和已有工程资产共同决定了这一组合的成本/体验平衡}。当未来需要大规模离线语音或GPU集群时，Paraformer、MuseTalk等方案仍可沿现有适配器边界接入；当需要更多云端音色或区域化地图服务时，也可以替换供应商而不改写游客端业务流程。
+
+\subsection{多端发布架构选型}
+
+多端发布的目标不是把同一套页面机械复制到每个平台，而是复用业务合同、状态模型和数据资产，同时允许录音、地图、WebView、文件系统和系统权限按终端分层适配。当前游客端代码明确采用\textbf{uni-app x Vapor}，并以HBuilderX完成Web/H5、微信小程序、Android、iOS模拟器与HarmonyOS构建；下表把它与常见跨端架构放在同一组工程指标下比较，选型结论只依据当前代码和构建证据。
+
+\begin{landscape}
+\begin{table}[H]
+  \centering
+  \small
+  \renewcommand{\arraystretch}{1.16}
+  \caption{多端发布架构横向比较}\label{tab:cross-platform-architecture}
+  \begin{tabularx}{\linewidth}{p{0.16\linewidth}p{0.18\linewidth}p{0.17\linewidth}p{0.18\linewidth}X}
+    \toprule
+    架构方案 & 运行时与本地化 & 跨平台覆盖 & 构建/维护与部署成本 & 当前项目适配判断 \\
+    \midrule
+    \textbf{uni-app x Vapor（采用）} & UTS/原生字节码与Vapor渲染；可直接调用平台录音、定位、地图和WebView能力 & Web/H5、微信小程序、Android、iOS、HarmonyOS均有对应构建入口 & HBuilderX统一工程与分平台编译；需接受不同平台组件和权限边界，维护成本集中在适配层 & 与现有\filepath{visitor-app}、UTS/ArkTS/CMake/Ninja、APK、微信包和HAP证据一致，适合当前评审与景区终端交付 \\
+    传统uni-app & Vue/JavaScript运行时与原生插件体系成熟，端侧本地能力依赖插件和桥接 & Web、微信、Android、iOS等覆盖广；HarmonyOS能力需按插件和版本确认 & 上手快、生态大；运行时桥接和插件版本会增加包体、调试与长期兼容成本 & 可迁移既有Vue业务，但不能直接复用当前uni-app x Vapor的UTS/字节码构建链，作为替代路线而非当前实现 \\
+    Taro & React/多端编译抽象，适合以小程序和Web为中心的页面复用 & 微信、支付宝、抖音、H5及部分原生端；复杂原生能力依赖组件或插件 & 编译抽象降低页面重复，但地图、WebView、录音和HarmonyOS能力需逐端验证 & 适合小程序优先产品；当前项目已有原生地图、HAP和Vapor资产，迁移会增加重写与验收成本 \\
+    Flutter & 自带渲染引擎，UI一致性和端侧实时性较好，插件调用原生能力 & Android、iOS、桌面与Web成熟；微信小程序和HarmonyOS需额外方案或生态支持 & 需要Dart工程、引擎包体和插件治理；景区终端部署可控但多端发布链更长 & 适合追求统一视觉和复杂端侧交互的产品，不符合当前微信/HarmonyOS同一业务交付证据 \\
+    React Native & JavaScript/TypeScript与原生组件桥接，适合已有React团队 & Android/iOS为主，Web、桌面和小程序需补充生态 & 原生依赖、桥接性能和版本矩阵需要持续维护；景区现场需分别验收权限与地图插件 & 当前Web为Vue 3且游客端已是uni-app x，采用RN会引入全新组件、状态与发布链，收益不足 \\
+    ArkUI-X & 以ArkUI/ArkTS为中心的跨端原生体验，适合HarmonyOS生态与原生能力 & HarmonyOS覆盖最佳，其他端需按版本和生态能力确认 & 原生性能与系统集成较好；跨非鸿蒙平台的工程和发布成本需要单独承担 & 可作为未来鸿蒙深度优化方向，但不能替代当前同时覆盖微信、Android、Web与桌面的uni-app x方案 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+\end{landscape}
 
 \section{关键设计原则}
 

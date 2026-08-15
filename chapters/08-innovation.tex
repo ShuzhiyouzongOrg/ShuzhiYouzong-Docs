@@ -102,9 +102,9 @@ Web、三类Electron桌面系统、Android APK、微信小程序和HarmonyOS HAP
     \draw[flowgold] (api.north east) to[out=10,in=220] (desk.south west);
     \draw[flow] (api.south east) to[out=-25,in=140] (mobile.north west);
     \draw[flow] (api.south east) to[out=-10,in=140] (wechat.north west);
-    \node[side] at (12.2,0) {共同数据\\景点/路线/会话/反馈};
-    \draw[curved] (desk.east) -- (12.2,0);
-    \draw[curved] (wechat.east) -- (12.2,0);
+    \node[side] (shared) at (12.2,0) {共同数据\\景点/路线/会话/反馈};
+    \draw[curved] (desk.east) to[out=0,in=150] (shared.north west);
+    \draw[curved] (wechat.east) to[out=0,in=210] (shared.south west);
   \end{tikzpicture}}
   \caption{多端发布共享业务合同、分层适配终端能力}\label{fig:multiplatform-innovation}
 \end{figure}

@@ -28,6 +28,7 @@
 
 需要明确的是，当前国际化对象是\textbf{界面文案、路由元信息和浏览器语音Locale}；景点资料、历史会话及RAG/LLM生成内容保持其数据原始语言，\textbf{不在前端运行时执行机器翻译}。
 
+\newpage
 \noindent\textit{源码位置：}
 \begin{itemize}
   \item \filepath{web/src/locales/index.ts}
@@ -60,7 +61,7 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
     \draw[flowgold] (r4.east) -- (r5.west);
     \draw[flowgold] (r5.east) -- (r6.west);
     \node[side] (faq) at (2.75,2.05) {FAQ缓存\\高频快速路径};
-    \node[side] (kb) at (6.85,-2.05) {本地知识库\\22景点/44分块};
+    \node[side] (kb) at (6.85,-2.05) {本地知识库\\22景点/107分块};
     \node[side] (reject) at (11.00,2.05) {拒答策略\\越界/无资料};
     \draw[curved] (r1.north) to[out=90,in=180] (faq.west);
     \draw[curved] (faq.north) .. controls (2.75,4.25) and (15.25,4.25) .. (r6.east);
@@ -100,16 +101,19 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
   \end{algorithmic}
 \end{algorithm}
 
+\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/retrieval.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=210,
   caption={景点实体与词项混合评分核心代码},label={lst:retrieval}]
   {assets/code/retrieval-score.mjs}
 
+\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/chat.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=195,
   caption={护栏检索与问答场景编排核心代码},label={lst:chat}]
   {assets/code/chat-orchestration.mjs}
 
+\newpage
 \section{个性化路线推荐}
 
 路线模块将景区节点、模板路线和游客偏好统一为\textbf{可解释的规则评分}。\textbf{时长匹配}形成基础分，历史文化、佛教、自然、拍照、亲子、演艺和轻松步行等标签形成增益；体力限制会降低登高节点权重。得分最高的模板再经过“30分钟压缩”“避台阶”和“冲突兴趣折中”等\textbf{自适应步骤}。
@@ -153,6 +157,7 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
   \end{algorithmic}
 \end{algorithm}
 
+\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/routePlanner.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=246,
   caption={路线模板多维偏好评分核心代码},label={lst:route}]
@@ -210,21 +215,20 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
 
 当讯飞形象凭证、额度或网络不可用时，管理员可在数字人配置页启用Live2D模型；如果本地模型或TTS仍不可用，则进入\textbf{纯文本服务}。当前设计采用\textbf{“配置驱动的人工切换冗余”}，\textbf{不会在连接失败后静默更换人物}，避免演示过程中角色突然改变。界面会保留连接、播报与错误状态，使现场人员能够说明失败阶段，同时保证游客仍可完成查询、阅读答案和获取路线。
 
+\newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/voice.mjs}。
 \lstinputlisting[style=projectcode,firstnumber=240,
   caption={ASR问答TTS全链路编排核心代码},label={lst:voice}]
   {assets/code/voice-pipeline.mjs}
 
+\newpage
 \noindent\textit{源码位置：}\filepath{web/src/composables/useXfAvatar.ts}。
 \lstinputlisting[style=projectcode,firstnumber=82,
   caption={讯飞云端数字人文本与情绪驱动核心代码},label={lst:avatar}]
   {assets/code/avatar-orchestration.ts}
 
-\noindent\textit{源码位置：}
-\begin{itemize}
-  \item \filepath{web/src/components/digital-human/DigitalHumanAvatar.vue}
-  \item \filepath{web/src/composables/useLive2dAvatar.ts}
-\end{itemize}
+\newpage
+\noindent\textit{源码位置：}\url{web/src/components/digital-human/DigitalHumanAvatar.vue}；\url{web/src/composables/useLive2dAvatar.ts}。
 \lstinputlisting[style=projectcode,firstnumber=1,
   caption={双引擎统一调度与Live2D音频口型核心代码},label={lst:dual-avatar}]
   {assets/code/avatar-dual-engine.ts}
@@ -242,25 +246,38 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
 
 \begin{figure}[H]
   \centering
-  \resizebox{0.98\textwidth}{!}{%
+  \resizebox{0.94\textwidth}{!}{%
   \begin{tikzpicture}[x=1cm,y=1cm]
-    \node[core] (data) at (0,0) {统一地图状态\\点位/路线/选中项};
-    \node[core] (check) at (3.4,0) {能力检查\\网络/Key/容器};
-    \node[coregold] (online) at (7.0,1.35) {腾讯地图JS GL\\在线标准底图};
-    \node[coregold] (local) at (7.0,-1.35) {Leaflet/手绘图\\本地可用路径};
-    \node[core] (result) at (10.8,0) {连续导览\\点位/路线/定位};
-    \draw[flow] (data.east) -- (check.west);
-    \draw[flowgold] (check.north east) to[out=20,in=180] node[above,font=\small]{在线且初始化成功} (online.west);
-    \draw[flow] (check.south east) to[out=-20,in=180] node[below,font=\small]{离线/缺Key/异常} (local.west);
-    \draw[flowgold] (online.east) to[out=0,in=25] (result.north west);
-    \draw[flow] (local.east) to[out=0,in=-25] (result.south west);
-    \draw[curved] (online.south) to[out=250,in=70] node[right,font=\scriptsize,align=center]{offline或SDK失败\\恢复本地层} (local.north);
+    \node[core] (state) at (0,0) {统一业务状态\\景点/路线/选中项};
+    \node[core] (leaflet) at (3.0,0) {Leaflet先启动\\容器与本地底层};
+    \node[core] (gate) at (6.0,0) {在线能力门禁\\网络/Key/中心点};
+    \node[coregold] (tencent) at (9.0,1.2) {腾讯地图JS GL\\同步中心/缩放/旋转};
+    \node[coregold] (fallback) at (9.0,-1.2) {Leaflet/手绘资产\\恢复底层与版权};
+    \node[core] (view) at (12.2,0) {连续导览视图\\点位/路线/定位};
+    \node[side] (position) at (0,2.0) {位置输入\\Geolocation/GPS};
+    \node[side] (events) at (6.0,-2.25) {回退触发\\offline/SDK异常};
+    \node[side] (retain) at (12.2,-2.0) {状态保留\\不清空已选路线};
+
+    \draw[flow] (state.east) -- (leaflet.west);
+    \draw[flow] (leaflet.east) -- (gate.west);
+    \draw[flowgold] (gate.north east) to[out=25,in=180]
+      node[pos=.52,above left,font=\scriptsize,align=right]{在线且初始化成功} (tencent.west);
+    \draw[flow] (gate.south east) to[out=-25,in=180]
+      node[pos=.52,below left,font=\scriptsize,align=right]{缺Key或能力不满足} (fallback.west);
+    \draw[flowgold] (tencent.east) to[out=0,in=25] (view.north west);
+    \draw[flow] (fallback.east) to[out=0,in=-25] (view.south west);
+    \draw[curved] (position.south) -- (state.north);
+    \draw[curved] (events.north) -- (gate.south);
+    \draw[curved] (events.east) to[out=0,in=220] (fallback.south west);
+    \draw[curved] (view.south) -- (retain.north);
+    \draw[curved,dashed] (tencent.south) -- node[right,font=\scriptsize]{运行期失败} (fallback.north);
   \end{tikzpicture}}
   \caption{Web地图在线服务与本地渲染兜底流程图}\label{fig:web-map-fallback}
 \end{figure}
 
+\newpage
 \noindent\textit{源码位置：}\filepath{web/src/components/map-guide/ScenicMap.vue}。
-\lstinputlisting[style=projectcode,firstnumber=1,
+\lstinputlisting[style=projectcode,basicstyle=\ttfamily\footnotesize,firstnumber=1,
   caption={腾讯地图初始化与Leaflet回退核心代码},label={lst:web-map-fallback}]
   {assets/code/map-provider-fallback.ts}
 
@@ -286,8 +303,9 @@ uni-app x游客端没有照搬Web的Leaflet容器，而是在\filepath{pages/map
   \end{tabularx}
 \end{table}
 
+\newpage
 \noindent\textit{源码位置：}\filepath{visitor-app/pages/map/index.uvue}。
-\lstinputlisting[style=projectcode,firstnumber=1,
+\lstinputlisting[style=projectcode,basicstyle=\ttfamily\footnotesize,firstnumber=1,
   caption={游客端地图模式切换与GPS最近点匹配核心代码},label={lst:mobile-map-fallback}]
   {assets/code/mobile-map-fallback.uts}
 

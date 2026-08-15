@@ -50,8 +50,8 @@
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{figures/login.png}{%
-    \includegraphics[width=0.95\textwidth]{figures/login.png}%
+  \IfFileExists{assets/figures/login.png}{%
+    \includegraphics[width=0.95\textwidth]{assets/figures/login.png}%
   }{%
     \begin{tikzpicture}[x=1cm,y=1cm]
       \draw[rounded corners=5pt,very thick,guideTeal,fill=white] (0,0) rectangle (14.2,6.6);
@@ -82,7 +82,7 @@
 
 \section{全局多语言交互}
 
-页面右上角提供\textbf{统一语言入口}，语言选择作用于游客导览、知识库、数字人配置、运营大屏、会话反馈和系统管理等\textbf{全部路由}，而不是只替换顶部导航。切换动作同时更新\textbf{Vue I18n活动语言与Pinia用户状态}以及HTML的\filepath{lang}属性，并通过版本化本地存储在下次访问时恢复。业务文案采用\textbf{五元组目录}维护，新增功能必须同时提供五种译文，降低遗漏单个页面或弹窗的风险。
+页面右上角提供\textbf{统一语言入口}，语言选择作用于游客导览、知识库、数字人配置、运营大屏、会话反馈和系统管理等\textbf{全部路由}，而不是只替换顶部导航。切换动作同时更新\textbf{Vue i18n 活动语言与 Pinia 用户状态以}及 HTML 的\filepath{lang}属性，并通过版本化本地存储在下次访问时恢复。业务文案采用\textbf{五元组目录}维护，新增功能必须同时提供五种译文，降低遗漏单个页面或弹窗的风险。
 
 \begin{table}[H]
   \centering
@@ -109,8 +109,8 @@
 
 \begin{figure}[H]
   \centering
-  \IfFileExists{figures/visitor-guide.png}{%
-    \includegraphics[width=0.95\textwidth]{figures/visitor-guide.png}%
+  \IfFileExists{assets/figures/visitor-guide.png}{%
+    \includegraphics[width=0.95\textwidth]{assets/figures/visitor-guide.png}%
   }{%
     \begin{tikzpicture}[x=1cm,y=1cm]
       \draw[rounded corners=5pt,very thick,guideTeal,fill=guideTealLight] (0,0) rectangle (14.2,7.0);
@@ -158,16 +158,17 @@
   \end{tabularx}
 \end{table}
 
-图\ref{fig:web-real-screens}和图\ref{fig:harmony-real-screens}均来自当前可运行系统，而非概念效果图。Web端展示数字人问答与景区手绘地图上的真实点位；HarmonyOS截图来自HAP在Pura 90模拟器的安装运行结果，覆盖首页、地图与AI导游主链路。Android APK与微信小程序的预留截图位置统一放在第\ref{sec:multiplatform-delivery}节，后续只需按约定文件名替换，无需重新排版。
+图\ref{fig:web-real-screens}和图\ref{fig:harmony-real-screens}均来自当前可运行系统，而非概念效果图。Web端展示数字人问答与景区手绘地图上的真实点位；HarmonyOS截图来自HAP在Pura 90模拟器的安装运行结果，覆盖首页、个人服务与AI导游主链路。Android APK与微信小程序的真实运行截图统一放在第\ref{sec:multiplatform-delivery}节，便于评审连续核对多端交付证据。
 
 \begin{figure}[H]
   \centering
-  \begin{minipage}[t]{0.49\textwidth}
+  \begin{minipage}[t]{0.65\textwidth}
     \centering
     \includegraphics[width=\linewidth]{web-digital-human.png}
     \small Web在线数字人与问答界面
-  \end{minipage}\hfill
-  \begin{minipage}[t]{0.49\textwidth}
+  \end{minipage}
+  \par\medskip
+  \begin{minipage}[t]{0.65\textwidth}
     \centering
     \includegraphics[width=\linewidth]{web-scenic-map.png}
     \small Web景区点位与手绘地图界面
@@ -179,17 +180,17 @@
   \centering
   \begin{minipage}[t]{0.30\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{visitor-harmony-home.jpeg}
+    \includegraphics[width=\linewidth]{visitor-harmony-home.png}
     \small 首页与景点入口
   \end{minipage}\hfill
   \begin{minipage}[t]{0.30\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{visitor-harmony-map.jpeg}
-    \small 定位、点位与路线地图
+    \includegraphics[width=\linewidth]{visitor-harmony-infor.png}
+    \small “我的”与个人服务页面
   \end{minipage}\hfill
   \begin{minipage}[t]{0.30\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{visitor-harmony-ai.jpeg}
+    \includegraphics[width=\linewidth]{visitor-harmony-ai.png}
     \small AI导游与数字人入口
   \end{minipage}
   \caption{HarmonyOS HAP真实运行界面组图}\label{fig:harmony-real-screens}
@@ -223,6 +224,7 @@
   \caption{语音文本与数字人协同交互流程图}\label{fig:multimodal-flow}
 \end{figure}
 
+\newpage
 \section{管理端交互设计}
 
 管理端按业务闭环设置\textbf{六组菜单}：知识库管理、数字人配置、运营分析、会话与反馈、服务质量、系统用户。\\运营人员可在\textbf{不修改代码}的情况下维护FAQ与景点资料，并在数字人新增/编辑弹窗中展开\textbf{“选择形象”和“选择音色”}目录。选择形象会同步填入讯飞\filepath{avatarId}或Live2D \filepath{modelId}及角色名称，选择音色会写入\textbf{VCN参数}；下方表单继续支持欢迎语、语速、情绪风格、服务状态和启用开关等精细配置。
@@ -276,9 +278,9 @@
 \begin{figure}[H]
   \centering
   \IfFileExists{web-operations-dashboard.png}{%
-    \includegraphics[width=0.95\textwidth]{web-operations-dashboard.png}%
-  }{\IfFileExists{figures/admin-dashboard.png}{%
-    \includegraphics[width=0.95\textwidth]{figures/admin-dashboard.png}%
+    \includegraphics[width=0.86\textwidth]{web-operations-dashboard.png}%
+  }{\IfFileExists{assets/figures/admin-dashboard.png}{%
+    \includegraphics[width=0.86\textwidth]{assets/figures/admin-dashboard.png}%
   }{%
     \begin{tikzpicture}[x=1cm,y=1cm]
       \draw[rounded corners=5pt,very thick,guideGold,fill=guideGoldLight] (0,0) rectangle (14.2,6.9);
@@ -307,3 +309,5 @@
   }}
   \caption{管理端运营分析大屏页面图}\label{fig:admin-ui}
 \end{figure}
+
+图\ref{fig:admin-ui}把服务人次、满意度、平均时延、问答总量、景点热度、游客画像和运营建议放在同一观察面板中。它与上文的知识库、数字人配置和会话反馈入口形成\textbf{“配置—服务—观察—修正”}闭环，评审时可以沿同一页面理解管理端如何把游客数据转化为内容维护动作。
