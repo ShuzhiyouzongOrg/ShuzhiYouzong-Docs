@@ -6,8 +6,8 @@
 \subtitle{A5赛题}
 \author{张婧瑜\quad 季祥\quad 林骏毅}
 \institute{泉州信息工程学院——数智游踪队}
-\date{August 15, 2026}
-\version{v3.1.0}
+\date{August 28, 2026}
+\version{v3.2.0}
 \bioinfo{指导老师}{陈子淮}
 \extrainfo{禅意灵山·智慧同行——AI 数字人为您讲解景点、规划路线、答疑解惑}
 \cover{assets/figures/cover.png}
@@ -47,7 +47,8 @@
 \renewcommand{\algorithmicrequire}{\textbf{输入：}}
 \renewcommand{\algorithmicensure}{\textbf{输出：}}
 \newcommand{\yes}{\textcolor{structurecolor}{\ensuremath{\checkmark}}}
-\newcommand{\filepath}[1]{\texttt{\detokenize{#1}}}
+% 使用可断行的等宽路径，避免长文件名、配置项和源码路径撑破正文宽度。
+\newcommand{\filepath}[1]{\path{#1}}
 
 \definecolor{guideTeal}{RGB}{29,111,103}
 \definecolor{guideTealLight}{RGB}{232,244,242}
@@ -100,6 +101,14 @@
   aboveskip=0.6em,
   belowskip=0.4em
 }
+\lstdefinestyle{projectcodecompact}{
+  style=projectcode,
+  basicstyle=\ttfamily\fontsize{7pt}{7.6pt}\selectfont,
+  numberstyle=\tiny\color{gray},
+  numbersep=4pt,
+  aboveskip=0.2em,
+  belowskip=0.2em
+}
 
 \captionsetup{font=small,labelfont=bf,labelsep=quad}
 \addtolength{\cftchapnumwidth}{0.5em}
@@ -125,11 +134,11 @@
 
     “数智游踪”面向第十五届“中国软件杯”A5“景区导览服务AI数字人”赛题，针对旺季导游供给不足、传统录音导览无法追问、游客偏好难以满足以及服务数据难以反哺运营等问题，建设集\textbf{可信问答、智能讲解、个性路线、数字人表达和运营分析}于一体的智慧景区沉浸式导览助手。产品以无锡灵山胜境及拈花湾禅意小镇公开资料为知识边界，形成\textbf{游客端与管理端协同、线上服务与线下运营联动}的业务闭环。
 
-    系统采用\textbf{Vue 3双端前台、Node.js统一API、模块化智能服务、SQLite事务数据与JSON知识库}相结合的分层架构。前端以Vue I18n建立简体中文、英文、韩文、繁体中文和日文\textbf{五语言体系}，将框架文案与景区业务文案统一纳入运行时切换和偏好持久化；核心问答链路以景点实体、关键词、意图和查询覆盖度构成混合检索，通过\textbf{FAQ快速通道、敏感与越界护栏、证据重排和引用约束}实现有据生成。
+    系统采用\textbf{Vue 3双端前台、Node.js统一API、模块化智能服务、SQLite事务数据与可重建知识快照}相结合的分层架构。前端以Vue I18n建立简体中文、英文、韩文、繁体中文和日文\textbf{五语言体系}，将框架文案与景区业务文案统一纳入运行时切换和偏好持久化；核心问答链路以景点实体、关键词、意图和查询覆盖度构成混合检索，通过\textbf{FAQ快速通道、敏感与越界护栏、证据重排和引用约束}实现有据生成，并可在配置完整时接入托管Dense检索与Reranker。
 
     数字人层采用\textbf{讯飞云端流式数字人与本地Live2D双引擎模型}：云端引擎负责WebRTC视频、TTS、口型和情绪表达，本地引擎通过Cubism画布、后端TTS和Web Audio振幅分析驱动口型。管理端提供形象与音色折叠式快捷选择，同时保留形象ID、模型ID、VCN、语速、欢迎语、情绪风格和服务状态等精细参数；启用配置实时下发游客端，统一调度器对外保持\textbf{相同的播报、解锁音频与打断接口}。
 
-    当前工程已实现\textbf{游客导览、管理登录、知识管理、数字人配置、路线推荐、会话反馈、运营大屏和质量修正}等完整功能。Web端地图采用\textbf{腾讯地图JS GL与Leaflet手绘地图双路径}，游客多端进一步采用原生地图、GPS定位与本地手绘图组合；全局五语言国际化和双引擎数字人模型使同一套导览业务既能面向不同语言游客一致呈现，也能在云端数字人不可用时切换本地形象继续服务。除Web外，\textbf{Windows、Linux、macOS桌面安装包以及Android APK、微信小程序和鸿蒙HAP}均已完成构建或发布验证。项目测试覆盖\textbf{50条标准问答和20条检索用例}，前端类型检查、生产构建、数字人、并发与降级测试均通过。
+    当前工程已实现\textbf{游客导览、管理登录、知识管理、数字人配置、路线推荐、会话反馈、运营大屏和质量修正}等完整功能。Web端地图采用\textbf{腾讯地图JS GL与Leaflet手绘地图双路径}，游客多端进一步采用原生地图、GPS定位与本地手绘图组合；全局五语言国际化和双引擎数字人模型使同一套导览业务既能面向不同语言游客一致呈现，也能在云端数字人不可用时切换本地形象继续服务。除Web外，\textbf{Windows、Linux、macOS桌面安装包以及Android APK、微信小程序和鸿蒙HAP}均已完成构建或发布验证。项目测试覆盖\textbf{50条标准问答和20条检索用例}，前端类型检查、生产构建、数字人、并发、降级与RAG回归测试均通过；行为分析表按\filepath{operations\_analytics}用途隔离，不进入游客问答索引。
 
     \noindent\textbf{关键词：}景区导览；AI数字人；双端兜底；多端发布；地图导览；检索增强生成；多模态交互
   \endgroup
@@ -155,6 +164,38 @@
     \@starttoc{lof}
   \endgroup
 }
+\newcommand{\printversionhistory}{%
+  \newpage
+  \thispagestyle{plain}
+  \phantomsection
+  \addcontentsline{toc}{chapter}{版本修订记录表}
+  \begin{center}
+    {\songti\zihao{-2}\bfseries 版本修订记录表\par}
+  \end{center}
+  \vspace{0.5em}
+  \begingroup
+    \songti\zihao{-5}
+    \setlength{\tabcolsep}{2.5pt}
+    \renewcommand{\arraystretch}{1.12}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.11\textwidth}>{\raggedright\arraybackslash}p{0.13\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{0.08\textwidth}}
+      \hline
+      版本号 & 修改日期 & 修订内容 & 修改原因 & 修订人 \\
+      \hline
+      v1.0.0 & 2026-07-14 & 建立工程基线 & 完成产品骨架 & 季祥 \\
+      \hline
+      v2.0.0 & 2026-08-15 & 发布首版文档 & 形成评审材料 & 季祥 \\
+      \hline
+      v2.1.0 & 2026-08-15 & 完善技术选型 & 明确适配约束 & 季祥 \\
+      \hline
+      v3.0.0 & 2026-08-14 & 完成多端与双兜底 & 支撑多平台交付 & 季祥 \\
+      \hline
+      v3.1.0 & 2026-08-16 & 完善评审材料 & 对齐评审重点 & 季祥 \\
+      \hline
+      v3.2.0 & 2026-08-28 & 完成RAG与质量治理 & 补齐验证证据 & 季祥 \\
+      \hline
+    \end{tabularx}
+  \endgroup
+}
 \makeatother
 
 \begin{document}
@@ -163,10 +204,11 @@
 \frontmatter
 \begingroup
   \zihao{-4}
-  \tableofcontents
+\tableofcontents
 \endgroup
 \printprojectabstract
 \printcombinedlists
+\printversionhistory
 
 \mainmatter
 \newpage\input{chapters/01-background}

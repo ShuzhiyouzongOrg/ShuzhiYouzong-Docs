@@ -2,7 +2,7 @@
 
 \section{总体架构}
 
-系统采用\textbf{浏览器双端、统一API、模块化业务服务和本地数据层}的分层结构。游客端与管理端共享Vue 3、Vue I18n和统一消息目录，但通过\textbf{路由和角色权限}隔离；Node.js服务统一处理鉴权、问答、语音、路线、数字人、知识管理和分析请求；SQLite保存事务型业务数据，JSON知识库保存可重建的景点实体与分块。总体关系如图\ref{fig:overall-architecture}所示。
+系统采用\textbf{浏览器双端、统一API、模块化业务服务和本地数据层}的分层结构。游客端与管理端共享Vue 3、Vue I18n和统一消息目录，但通过\textbf{路由和角色权限}隔离；Node.js服务统一处理鉴权、问答、语音、路线、数字人、知识管理和分析请求；SQLite保存事务与活动知识版本，JSON保留可重建快照和景点展示资料。总体关系如图\ref{fig:overall-architecture}所示。
 
 \begin{figure}[H]
   \centering
@@ -20,7 +20,7 @@
 
 \subsection{数据与外部能力层}
 
-本地层包含\textbf{12张SQLite业务表}，知识快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个知识分块}，另有20条检索测试用例和50条问答测试用例。外部能力以\textbf{适配器}接入OpenAI兼容大模型、ASR/TTS和讯飞交互式数字人。讯飞Web SDK以应用凭证、形象ID和渲染容器启动视频流\upcite{iflytekWebSdk}，项目在此基础上封装\filepath{useXfAvatar.ts}，通过\filepath{writeText}下发答案及情绪参数；本地侧内置\textbf{Live2D Cubism模型与Web Audio口型驱动}，形成不依赖讯飞形象流的备用渲染路径。
+本地层包含\textbf{12张SQLite业务表}，知识快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个初始知识分块}，另有20条检索测试用例和50条问答测试用例。外部能力以\textbf{适配器}接入OpenAI兼容大模型、可选百炼Embedding/Reranker、Qdrant、ASR/TTS和讯飞交互式数字人。远程向量载荷只保存分块元数据并按\filepath{indexVersion}过滤，远程调用失败时回退本地检索。讯飞Web SDK以应用凭证、形象ID和渲染容器启动视频流\upcite{iflytekWebSdk}，项目在此基础上封装\filepath{useXfAvatar.ts}，通过\filepath{writeText}下发答案及情绪参数；本地侧内置\textbf{Live2D Cubism模型与Web Audio口型驱动}，形成不依赖讯飞形象流的备用渲染路径。
 
 \section{整体技术路线}
 
@@ -37,7 +37,7 @@
 \begin{table}[H]
   \centering
   \caption{系统技术选型与理由表}\label{tab:tech-stack}
-  \begin{tabularx}{\textwidth}{p{0.16\textwidth}p{0.25\textwidth}X}
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}X}
     \toprule
     层次 & 技术 & 选型理由 \\
     \midrule
@@ -47,9 +47,9 @@
     \midrule
     服务端 & Node.js原生HTTP、ES Modules & 轻量、启动快；服务边界清晰，便于演示部署和自动化测试 \\
     \midrule
-    智能问答 & 本地RAG、OpenAI兼容LLM适配器 & 知识可更新、来源可追溯；模型提供者可替换，离线可降级 \\
+    智能问答 & \makecell[l]{本地RAG、规则/BM25/\\RRF/MMR、可选百炼\\Embedding/Qdrant/Reranker、\\OpenAI兼容LLM适配器} & 知识可更新、来源可追溯；远程增强可关闭，模型与向量服务可替换，离线可降级 \\
     \midrule
-    数据层 & SQLite、JSON知识库、XLSX导入 & 零配置、单机部署方便；结构化业务数据与可重建知识数据分离 \\
+    数据层 & SQLite活动知识版本、JSON快照、XLSX导入 & 零配置、单机部署方便；事务、版本元数据与可重建知识数据分离，支持远程索引同步 \\
     \midrule
     工程保障 & OpenAPI、Bearer Token、scrypt、日志与备份脚本 & 提升接口一致性、访问控制、凭证安全与故障恢复能力 \\
     \bottomrule
@@ -199,8 +199,8 @@ Web端的真实实现是\textbf{Leaflet先创建地图容器，在线且Key有�
 总体设计以\textbf{“事实可信、链路可控、能力可替换、现场可交付”}为约束，不以单一模型或单一数字人厂商作为系统成立的前提。各原则同时落实到接口字段、运行状态和管理动作中：
 
 \begin{enumerate}
-  \item \textbf{知识有界与证据优先：}模型只解释检索到的景区资料，回答同步返回来源、质量标签和缺证据状态。
-  \item \textbf{链路可观测与问题可追溯：}响应记录检索、LLM、ASR、TTS及总耗时，会话、反馈和人工标注能够反查到原始问题。
+  \item \textbf{知识有界与证据优先：}模型只解释检索到的当前景区资料，回答同步返回来源、质量标签和缺证据状态。
+  \item \textbf{链路可观测与问题可追溯：}响应记录本地/远程检索通道、Embedding、Reranker、LLM、ASR、TTS及总耗时，并以版本和追踪标识反查原始问题。
   \item \textbf{体验渐进增强：}数字人和云语音作为增强能力，异常时自动保留文本问答、本地检索与路线推荐，避免现场服务中断。
   \item \textbf{配置与能力解耦：}语言、形象、音色、渲染引擎、模型提供者、知识数据和路线模板均通过配置或适配器接入，降低替换成本。
   \item \textbf{国际化全局一致：}框架文案和景区业务文案进入同一Vue I18n实例，语言选择写入用户状态并恢复，避免页面局部切换。

@@ -39,7 +39,7 @@
 \newpage
 \section{本地知识库与RAG问答}
 
-Transformer为当前主流大模型提供了基于注意力的序列建模基础\upcite{vaswani2017attention}。RAG进一步将参数化生成模型与外部非参数知识结合，使\textbf{知识更新、证据追踪和事实约束}成为可能\upcite{lewis2020rag}。本项目采用适合比赛资料规模的\textbf{本地混合检索}：景点实体、标题、关键词、正文、同义扩展、意图和查询覆盖度共同计分；检索结果经重排后\textbf{最多选择3条引用}进入答案。
+Transformer为当前主流大模型提供了基于注意力的序列建模基础\upcite{vaswani2017attention}。RAG进一步将参数化生成模型与外部非参数知识结合，使\textbf{知识更新、证据追踪和事实约束}成为可能\upcite{lewis2020rag}。本项目以\textbf{本地混合检索为默认路径}，并预留可配置的托管Dense增强：景点实体、标题、关键词、正文、同义扩展、意图和查询覆盖度共同参与召回；候选经过RRF、事实范围过滤、时效偏好和MMR多样性排序后，\textbf{最多选择3条引用}进入答案。
 
 \begin{figure}[H]
   \centering
@@ -57,7 +57,7 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
     \draw[flowgold] (r4.east) -- (r5.west);
     \draw[flowgold] (r5.east) -- (r6.west);
     \node[side] (faq) at (2.75,2.05) {FAQ缓存\\高频快速路径};
-    \node[side] (kb) at (6.85,-2.05) {本地知识库\\22景点/107分块};
+    \node[side] (kb) at (6.85,-2.05) {本地知识快照\\7资料/22景点/107分块};
     \node[side] (reject) at (11.00,2.05) {拒答策略\\越界/无资料};
     \draw[curved] (r1.north) to[out=90,in=180] (faq.west);
     \draw[curved] (faq.north) .. controls (2.75,4.25) and (15.25,4.25) .. (r6.east);
@@ -72,42 +72,97 @@ Transformer为当前主流大模型提供了基于注意力的序列建模基础
 \begin{algorithm}[H]
   \caption{混合检索与有据生成算法}\label{alg:rag}
   \begin{algorithmic}[1]
-    \Require 问题$q$、会话历史$H$、知识分块集合$D$、返回数量$k$
-    \Ensure 答案$a$、引用集合$C$、质量与情绪标签
+    \Require 问题$q$、会话历史$H$、知识快照$D$、检索选项$O$
+    \Ensure 答案$a$、引用集合$C$、质量与情绪标签、追踪摘要
     \State $q' \gets \Call{ResolveFollowUp}{q,H}$ \Comment{补全多轮指代}
+    \State $P \gets \Call{BuildQueryPlan}{q'}$ \Comment{规范化、改写与复合问题拆分}
     \If{$q'$命中敏感规则或超出景区范围}
       \State \Return 拒答结果及引导语 \Comment{先执行安全边界}
     \EndIf
     \If{FAQ缓存命中$q'$}
       \State \Return 缓存答案与零检索耗时 \Comment{高频问题快速返回}
     \EndIf
-    \State $T \gets \Call{TokenizeAndExpand}{q'}$
-    \State $I \gets \Call{DetectIntent}{q',T}$，$S \gets \Call{MatchSpot}{q',T}$
-    \State $(w_s,w_t,w_i,w_c) \gets \Call{Calibrate}{TestSet}$ \Comment{权重由测试集校准}
-    \ForAll{$d \in D$}
-      \State $score[d] \gets w_sS+w_tT+w_iI+w_c\Call{Coverage}{q',d}$
-    \EndFor
-    \State $C \gets \Call{RerankAndTopK}{D,score,k}$ \Comment{实体与开放时间保持强约束}
-    \Statex \Comment{多景区大规模语料可融合DPR稠密召回\upcite{karpukhin2020dpr}}
-    \If{$C$为空或相关性低于阈值}
+    \State $D' \gets \Call{FilterMetadata}{D,O}$ \Comment{用途、租户、权限、景区、语言与生效期}
+    \State $L \gets \Call{RuleAndBM25}{q',D'}$ \Comment{实体/意图规则与词法通道}
+    \State $L \gets \Call{WeightedRRFAndMMR}{L}$ \Comment{融合、去重并抑制同父片段重复}
+    \If{托管Dense配置完整}
+      \State $V \gets \Call{EmbedAndQueryQdrant}{q',D',O}$ \Comment{批量向量化与版本过滤}
+      \State $L \gets \Call{RRF}{L,V}$
+      \State $L \gets \Call{Rerank}{q',L}$ \Comment{Reranker失败时保留融合结果}
+    \EndIf
+    \State $C \gets \Call{FactScopeFreshnessMMR}{L,q',O}$
+    \If{$C$为空、证据覆盖不足或低于决策阈值}
       \State \Return 资料未覆盖结果 \Comment{无证据不生成事实}
     \EndIf
     \State $a \gets \Call{LLMGenerate}{q',H,C}$ \Comment{只注入已选证据}
-    \State \Return $a,C,\Call{Label}{q',a}$
+    \State $a \gets \Call{EnforceAndValidateCitations}{a,C}$
+    \State \Return $a,C,\Call{Label}{q',a},\Call{Trace}{q',C}$
   \end{algorithmic}
 \end{algorithm}
 
+\subsection{知识快照、用途边界与可回滚版本}
+
+知识构建不再把所有上传文件视为同一种游客问答资料。每个文档和分块均保留\textbf{knowledgeScope、accessScope、tenantId、documentType、enabled、validFrom、validTo、contentHash和indexVersion}等元数据。文件名包含“行为分析”“消费分析”或“运营统计”时，默认归入\filepath{operations\_analytics}，只供运营分析使用；只有\filepath{visitor\_qa}且启用、权限可见、景区与生效期匹配的分块才进入游客问答检索。
+
+知识写入先在SQLite中完成校验，再生成新的\textbf{indexVersion}并写入运行时知识快照。快照中的文档与分块必须引用同一版本，JSON Schema校验器会检查必填字段、用途枚举、来源文档、访问范围、租户和版本一致性。远程向量索引也以\filepath{indexVersion}作为Qdrant过滤条件，因此新版本全部写入成功前不会改变线上活动检索，旧版本可以按保留策略清理或回滚。
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{RAG知识边界与版本治理规则表}\label{tab:rag-governance}
+  \begin{tabularx}{\textwidth}{p{0.22\textwidth}p{0.30\textwidth}X}
+    \toprule
+    治理对象 & 当前实现 & 失败或异常时的结果 \\
+    \midrule
+    文档用途 & 游客问答、运营分析、内部参考三类范围；行为分析表默认隔离 & 不符合用途枚举的记录拒绝进入活动快照 \\
+    内容分块 & DOCX/Markdown/TXT、文本型PDF和结构化XLSX分别解析；保留页码、工作表、行范围与来源 & 扫描型PDF进入\filepath{needs\_ocr}，不以空文本入库 \\
+    活动版本 & 文档和分块共享\filepath{indexVersion}，写入前完成Schema一致性检查 & 版本不一致时拒绝激活，保留上一活动版本 \\
+    远程向量 & 只同步启用的\filepath{visitor\_qa}分块，并在Qdrant按版本、用途、权限、租户、景区和语言过滤 & Embedding、Qdrant或重排超时回退本地混合检索 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
 \newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/retrieval.mjs}。
-\lstinputlisting[style=projectcode,firstnumber=210,
+\lstinputlisting[style=projectcodecompact,firstnumber=1276,
   caption={景点实体与词项混合评分核心代码},label={lst:retrieval}]
   {assets/code/retrieval-score.mjs}
 
 \newpage
 \noindent\textit{源码位置：}\filepath{server/src/services/chat.mjs}。
-\lstinputlisting[style=projectcode,firstnumber=195,
+\lstinputlisting[style=projectcodecompact,firstnumber=485,
   caption={护栏检索与问答场景编排核心代码},label={lst:chat}]
   {assets/code/chat-orchestration.mjs}
+
+\newpage
+\subsection{托管Dense增强与本地降级}
+
+当\filepath{RAG\_REMOTE\_ENABLED=true}且百炼Embedding、Qdrant连接、集合维度和过滤索引均配置完整时，异步检索会并行保留本地词法候选，并将查询计划中的最多3个子问题批量向量化。
+
+默认配置使用\filepath{qwen3.7-text-embedding}、1024维向量、批量10条、Qdrant Cosine距离和\filepath{qwen3-rerank}；远程候选默认上限为20，Dense最低分为0.35，重排超时为1200毫秒。实现不把密钥下发浏览器，所有外部请求只发生在Node服务端。
+
+远程检索先按活动\filepath{indexVersion}和知识元数据过滤，再将本地词法结果与Dense结果使用RRF融合；若候选非空且重排服务可用，再进行Reranker排序，之后仍执行事实实体、开放时间/演出时间、时效和MMR约束。远程路径只是一层增强：缺少密钥、集合未同步、维度不符、网络超时或限流都会返回本地\filepath{hybridSearch}结果，并在\filepath{remote}摘要记录\filepath{disabled}、\filepath{partial}或\filepath{degraded}状态。
+
+\begin{table}[H]
+  \centering
+  \small
+  \caption{本地与托管RAG运行路径对比表}\label{tab:rag-runtime-paths}
+  \begin{tabularx}{\textwidth}{p{0.18\textwidth}p{0.28\textwidth}X}
+    \toprule
+    路径 & 主要步骤 & 适用边界 \\
+    \midrule
+    本地默认 & SQLite活动快照、查询计划、规则/BM25、加权RRF、事实范围、时效偏好和MMR & 无外部向量服务时稳定运行，适合本地部署和比赛演示 \\
+    托管增强 & 百炼Embedding、Qdrant Dense召回、本地候选融合、百炼Reranker与最终MMR & 语料扩大或需要语义召回时启用；密钥和网络由服务端管理 \\
+    降级路径 & 捕获远程错误，保留本地检索结果与引用；记录原因和阶段耗时 & 外部额度、网络、集合、维度或接口异常时不阻断问答 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/retrieval.mjs}；\filepath{server/src/services/retrieval/remoteProviders.mjs}；\filepath{server/src/services/retrieval/remoteIndex.mjs}。
+\lstinputlisting[style=projectcode,basicstyle=\ttfamily\footnotesize,firstnumber=665,
+  caption={托管Dense检索、Qdrant版本过滤与本地降级核心代码},label={lst:remote-rag}]
+  {assets/code/remote-rag.mjs}
 
 \newpage
 \section{个性化路线推荐}

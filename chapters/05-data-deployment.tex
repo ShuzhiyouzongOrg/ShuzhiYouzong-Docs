@@ -2,7 +2,7 @@
 
 \section{知识数据设计}
 
-知识构建脚本读取\textbf{官方DOCX资料和经整理的多语言Markdown资料}，解析结构化景点和导览章节，再生成景点实体、知识分块与来源元数据。每个分块保留文档名、章节、景点标识、正文、关键词和语言，使检索结果能够形成\textbf{可读引用}。当前快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个知识分块}；主景区与子景区通过\filepath{scenicArea}字段区分。地图中的高密度点位和道路轨迹属于地图数据，不与RAG景点实体数量混算。
+知识构建脚本读取\textbf{官方DOCX资料、经整理的多语言Markdown资料以及可选的PDF/XLSX上传文档}，解析结构化景点和导览章节，再生成景点实体、知识分块与来源元数据。每个分块保留文档名、章节、景点标识、正文、关键词和语言，使检索结果能够形成\textbf{可读引用}。内置演示快照包含\textbf{7份资料、22个RAG景点实体、20个导览分节和107个知识分块}；运行时上传文档由SQLite活动知识版本管理，并可重建为新的快照。主景区与子景区通过\filepath{scenicArea}字段区分。地图中的高密度点位和道路轨迹属于地图数据，不与RAG景点实体数量混算。
 
 \begin{table}[H]
   \centering
@@ -14,10 +14,10 @@
     景点实体 & id、name、aliases、culture、highlights、openInfo & 精确识别景点、别名、开放信息与文化特征 & 22条 \\
     导览分节 & title、content、source、language & 保存可独立引用的章节级导览内容 & 20条 \\
     知识分块 & documentId、title、content、keywords、scenicSpotId、language & 作为检索最小证据单元，保留来源关系 & 107条 \\
-    来源资料 & fileName、fileType、language、chunkCount & 记录DOCX/Markdown来源、语言和处理状态 & 7份 \\
+    来源资料 & fileName、fileType、language、chunkCount、knowledgeScope、accessScope & 记录DOCX/Markdown/PDF/XLSX来源、用途、权限和处理状态 & 内置7份；可扩展 \\
     检索用例 & query、expectedTitle、expectedSpot、expectedTerms & 验证Top-1、Top-3和关键词召回 & 20条 \\
     问答用例 & question、scenario、label、terms、spot & 验证答案场景、标签、引用与实体 & 50条 \\
-    上传文档 & fileName、fileType、status、chunkCount & 支持后台文档管理与知识重建状态追踪 & 数据库持久化 \\
+    上传文档 & fileName、fileType、status、processingStage、indexVersion、contentHash & 支持后台文档管理、异步解析、版本重建和引用追踪 & 数据库持久化 \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -52,9 +52,34 @@
 \end{figure}
 
 \newpage
+\subsection{PDF、XLSX与OCR文档入库}
+
+上传服务先校验扩展名与真实文件签名，再按文档类型选择解析器。文本型PDF由内置解析器按页提取文字并生成带页码的分块；如果页面文字为空、过短或明显不足以代表页面内容，则标记为\filepath{needs\_ocr}，不把空结果写入游客问答索引。可选的阿里云文档解析任务在服务端异步提交、轮询和回收，避免请求线程长时间占用；服务未配置时仍保留明确的待OCR状态。
+
+XLSX使用服务端\filepath{xlsx}解析器按工作表、表头和业务行生成结构化分块，保留\filepath{sheetName}、\filepath{range}、\filepath{rowStart}和\filepath{rowEnd}等引用位置。宏、外链、路径穿越、加密包、超大解压体积和异常压缩比会在解析前拒绝。文件名包含“行为分析”等运营数据特征时默认归入\filepath{operations\_analytics}，用于运营看板而不进入游客问答；需要进入RAG的XLSX必须明确选择\filepath{visitor\_qa}用途并通过同一份元数据准入规则。
+
+文档处理状态沿以下阶段推进：\filepath{uploaded}、\filepath{classified}、\filepath{extracting}和\filepath{chunking}。
+
+后续结果状态包括\filepath{indexing}、\filepath{processed}、\filepath{needs\_ocr}或\filepath{failed}。
+
+耗时任务由定时Worker以单批次租约执行，成功后才激活新\filepath{indexVersion}；同一来源重复提交通过内容哈希去重，失败任务保留脱敏错误码供管理员重试。
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/knowledgeBuild.mjs}；\filepath{server/src/services/knowledgeRepository.mjs}；\filepath{server/src/services/knowledgeMetadata.mjs}。
+\lstinputlisting[style=projectcode,basicstyle=\ttfamily\footnotesize,firstnumber=201,
+  caption={知识快照版本化与活动指针切换核心代码},label={lst:knowledge-versioning}]
+  {assets/code/knowledge-versioning.mjs}
+
+\newpage
+\noindent\textit{源码位置：}\filepath{server/src/services/pdfKnowledge.mjs}；\filepath{server/src/services/xlsxKnowledge.mjs}；\filepath{server/src/services/documentParserTasks.mjs}。
+\lstinputlisting[style=projectcode,basicstyle=\ttfamily\footnotesize,firstnumber=24,
+  caption={PDF、XLSX与OCR任务分流核心代码},label={lst:document-processing}]
+  {assets/code/document-processing.mjs}
+
+\newpage
 \section{业务数据与持久化}
 
-SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、数字人配置、FAQ、知识文档、游客行为、路线选择和消息标注等业务对象。\textbf{事务型数据进入SQLite}；可从官方材料重建的\textbf{知识分块继续保存在JSON中}，从而避免将大段文本与高频会话写入混在同一数据路径。
+SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、数字人配置、FAQ、知识文档、知识分块、知识版本、游客行为、路线选择和消息标注等业务对象。\textbf{事务与活动知识元数据、正文及版本索引均以SQLite为准}；JSON保留可重建快照和景点展示资料，兼容尚未完成数据库同步的旧部署。检索链路优先读取SQLite活动版本，未发现活动版本时才回退内置JSON快照。
 
 \begin{table}[H]
   \centering
@@ -97,9 +122,9 @@ SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、�
        Web静态资源与SPA回退 · \texttt{/api}与SSE · 鉴权/日志/健康检查 · 业务与云适配器};
 
     \node[core,minimum width=5.1cm,minimum height=2.05cm] (local) at (2.7,-1.35)
-      {本地数据与连续服务\\SQLite 12张业务表 · JSON知识快照\\22景点/107分块 · Live2D/手绘地图\\\filepath{DEMO_MODE}确定性链路};
+      {本地数据与连续服务\\SQLite业务表 · 活动知识版本\\22景点/107分块 · Live2D/手绘地图\\\filepath{DEMO_MODE}确定性链路};
     \node[side,minimum width=5.1cm,minimum height=2.05cm] (cloud) at (8.7,-1.35)
-      {按需云能力\\OpenAI兼容大模型 · 讯飞ASR/TTS\\讯飞交互式数字人 · 腾讯地图JS GL\\HTTPS/WSS/WebRTC};
+      {按需云能力\\OpenAI兼容大模型 · 百炼Embedding/Reranker\\Qdrant · 讯飞ASR/TTS/数字人\\腾讯地图JS GL · HTTPS/WSS/WebRTC};
 
     \draw[flow] (web.south) -- ($(runtime.north)+(-4.1,0)$);
     \draw[flow] (desktop.south) -- ($(runtime.north)+(-1.4,0)$);
@@ -107,13 +132,16 @@ SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、�
     \draw[flow] (harmony.south) -- ($(runtime.north)+(4.1,0)$);
     \draw[flowgold] ($(runtime.south)+(-2.5,0)$) -- node[left,font=\scriptsize]{文件/SQLite} (local.north);
     \draw[curved] ($(runtime.south)+(2.5,0)$) -- node[right,font=\scriptsize]{HTTPS/WSS} (cloud.north);
-    \draw[curved,dashed] (cloud.south west) to[out=225,in=315]
-      node[below,font=\scriptsize]{云能力异常时回退本地形象、手绘地图与文本链路} (local.south east);
+    \draw[curved,dashed]
+      ($(cloud.south west)+(-0.15,-0.28)$) to[out=225,in=315]
+      node[below=2pt,fill=white,inner sep=1pt,font=\scriptsize,align=center]
+        {云能力异常时回退本地形象、手绘地图与文本链路}
+      ($(local.south east)+(0.15,-0.28)$);
   \end{tikzpicture}}
   \caption{系统单机同源与云能力部署拓扑图}\label{fig:deployment}
 \end{figure}
 
-\textbf{配置项按职责拆分}：后端保存端口、模型提供者、数据库路径和演示模式；前端保存讯飞应用凭证、服务地址、形象与音色默认值，并随构建产物部署Live2D Cubism运行时及Haru、Hiyori、Kei、Hibiki四套模型。运行配置中的\filepath{engine}、\filepath{avatar_id}、\filepath{model_id}和\filepath{vcn}\textbf{决定游客端实际加载路径}。\textbf{密钥文件不纳入版本控制}，部署前使用\filepath{npm run env:check}检查Node版本、数据文件、目录、端口和云端凭证。
+\textbf{配置项按职责拆分}：后端保存端口、模型提供者、数据库路径和演示模式；RAG远程增强由\filepath{RAG\_REMOTE\_ENABLED}控制，并分别配置百炼Embedding、Qdrant、Reranker和版本保留策略；文档解析由\filepath{DOCUMENT\_PARSER\_ENABLED}控制。前端保存讯飞应用凭证、服务地址、形象与音色默认值，并随构建产物部署Live2D Cubism运行时及Haru、Hiyori、Kei、Hibiki四套模型。运行配置中的\filepath{engine}、\filepath{avatar\_id}、\filepath{model\_id}和\filepath{vcn}\textbf{决定游客端实际加载路径}。\textbf{密钥文件不纳入版本控制}，部署前使用\filepath{npm run env:check}检查Node版本、数据文件、目录、端口和云端凭证。
 
 \newpage
 \section{多端发布与工程交付}\label{sec:multiplatform-delivery}
@@ -130,13 +158,13 @@ SQLite实际建表覆盖管理员、游客会话、消息、反馈、景点、�
     \toprule
     平台 & 构建目标/运行时 & 关键适配 & 当前证据与状态 \\
     \midrule
-    Web & Vite生产产物 + Node同源服务 & 浏览器录音/定位、腾讯地图与Leaflet、讯飞Web SDK & 主网站已上线；数字人、景区地图、管理端与项目介绍/文档网站可访问 \\
-    Windows & Electron x64 + NSIS EXE & 随包运行Web、Node服务和本地数据，回环随机端口 & 已完成编译构建与评审测试包发布；本地留存\path{ShuzhiYouzong-0.1.0-win-x64.exe} \\
-    Linux & Electron x64 + AppImage/DEB & 便携与安装包并行，校验glibc、包体、SQLite和启动链 & 已完成两类包构建、可移植性验证与服务器发布，下载项状态为\filepath{ready} \\
-    macOS & Electron x64/arm64 + DMG & Intel与Apple Silicon分别构建，运行数据写入userData & 已完成双架构编译构建与评审测试包发布；本地留存arm64 DMG \\
-    Android & uni-app x原生应用 + APK & 原生录音、定位、地图、安全区、受控WebView与公网API & 已完成APK构建；最新评审包\path{scenic-visitor-evaluation-1.0.2-102.apk} \\
-    微信小程序 & HBuilderX \path{mp-weixin} & 五Tab主包、四个业务分包；个人主体限制下使用本地数字人表现 & 已完成9个启用页面编译与发布；产物位于\path{unpackage/dist/build/mp-weixin} \\
-    HarmonyOS & UTS/ArkTS/CMake/Ninja + HAP & x86\_64模拟器手绘地图兜底、定位、录音与受控WebView & 已完成HAP全链构建，并在Pura 90模拟器安装启动和截图复核 \\
+    Web & Vite生产产物 + Node同源服务 & 浏览器录音/定位、腾讯地图与Leaflet、讯飞Web SDK & 主站已完成生产构建与部署；游客导览、地图、问答、数字人与管理端已纳入验收 \\
+    Windows & Electron x64 + NSIS EXE & 随包运行Web、Node服务和本地数据，回环随机端口 & v0.2.0构建目标已纳入CI；EXE评审包已完成安装与启动验证 \\
+    Linux & \makecell[l]{Electron x64\\AppImage + DEB} & 便携与安装包并行，校验glibc、包体、SQLite和启动链 & v0.2.0两类安装包已完成构建；Ubuntu 18.04兼容性门禁已配置 \\
+    macOS & Electron x64/arm64 + DMG & Intel与Apple Silicon分别构建，运行数据写入userData & v0.2.0双架构DMG已完成构建，可用于安装与启动测试 \\
+    Android & uni-app x原生应用 + APK & 原生录音、定位、地图、安全区、受控WebView与公网API & v0.2.0 APK已完成云打包与安装测试，地图、路线和数字人加载已回归 \\
+    微信小程序 & HBuilderX \path{mp-weixin} & 五Tab主包、四个业务分包；个人主体限制下使用本地数字人表现 & 已完成启用页面编译；产物位于\path{unpackage/dist/build/mp-weixin} \\
+    HarmonyOS & UTS/ArkTS/CMake/Ninja + HAP & x86\_64模拟器手绘地图兜底、定位、录音与受控WebView & v0.2.0 HAP已完成全链构建，并在模拟器安装启动复核 \\
     iOS & uni-app x模拟器目标 & 原生资源、字节码、定位/麦克风用途声明与API适配 & 模拟器目标编译已完成；正式签名、真机安装和商店发行仍需macOS/Xcode \\
     \bottomrule
   \end{tabularx}

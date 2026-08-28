@@ -2,7 +2,7 @@
 
 本仓库是“数智游踪——智慧景区沉浸式 AI 导览助手”的 LaTeX 项目技术文档源码，面向第十五届“中国软件杯”A5“景区导览服务 AI 数字人”赛题。文档基于 ElegantBook 模板持续迭代，内容以真实项目代码、构建结果、运行截图和部署状态为依据。
 
-当前文档版本为 `v3.1.0`，主入口为 [`product-design.tex`](product-design.tex)，正式交付文件为 [`shuzhiyouzong-docs.pdf`](shuzhiyouzong-docs.pdf)。
+当前文档版本为 `v3.2.0`，主入口为 [`product-design.tex`](product-design.tex)，正式交付文件为 [`shuzhiyouzong-docs.pdf`](shuzhiyouzong-docs.pdf)。
 
 ## 项目概述
 
@@ -13,7 +13,9 @@
 - 讯飞云端流式数字人与本地 Live2D 组成的数字人双端兜底机制。
 - 腾讯地图在线能力、Leaflet 手绘地图、原生地图与 GPS 定位组成的地图双端兜底机制。
 - Web、Windows、Linux、macOS、Android APK、微信小程序和 HarmonyOS HAP 的多端发布体系。
-- Vue 3、Node.js、SQLite、JSON 知识库与本地 RAG 组成的分层技术架构。
+- Vue 3、Node.js、SQLite、可重建知识快照与本地/托管可降级 RAG 组成的分层技术架构。
+- 版本化知识快照、用途与访问范围隔离、PDF/XLSX结构化解析和扫描PDF的异步 OCR 待处理链路。
+- 规则/BM25、RRF、MMR、可选百炼 Embedding、Qdrant 和 Reranker 组成的可观测检索链路，并保留本地回退。
 - 简体中文、英文、韩文、繁体中文和日文五语言运行时切换能力。
 - 游客导览、管理配置、知识维护、会话反馈、运营分析和质量修正构成的业务闭环。
 
@@ -29,8 +31,8 @@
 | 第 1 章 背景与需求分析 | 项目定位、业务痛点、赛题侧重点、产品目标与范围 |
 | 第 2 章 产品总体设计 | 总体架构、技术路线、核心技术选型、设计原则与功能域 |
 | 第 3 章 功能与交互设计 | 游客端、管理端、多语言、多模态流程及多端界面适配 |
-| 第 4 章 核心技术与算法设计 | i18n、本地 RAG、路线推荐、语音数字人编排与地图兜底 |
-| 第 5 章 数据、接口与部署设计 | 知识数据、业务数据、接口、部署拓扑与多端发布 |
+| 第 4 章 核心技术与算法设计 | i18n、本地与托管 RAG、路线推荐、语音数字人编排与地图兜底 |
+| 第 5 章 数据、接口与部署设计 | 知识数据、版本治理、PDF/XLSX/OCR、接口、部署拓扑与多端发布 |
 | 第 6 章 质量、安全与可靠性设计 | 非功能指标、安全可信、异常降级、运维与隐私保护 |
 | 第 7 章 测试评估与应用价值 | 测试策略、自动化结果、行业价值、商业价值与复用能力 |
 | 第 8 章 创新实践 | 可信智能、运营闭环、双端兜底和多端发布创新 |
@@ -89,6 +91,14 @@ shuzhiyouzong-docs.pdf
 脚本使用 `.latex-build/` 作为隔离构建目录。编译成功后中间文件会自动清理；编译失败时会保留该目录，便于检查 `.log`、`.blg` 等诊断文件。
 
 ## 文档维护
+
+### RAG与文档处理配置
+
+- 默认 `RAG_REMOTE_ENABLED=false`，本地规则/BM25、RRF、MMR 与 SQLite 活动知识版本即可完成离线问答。
+- 启用托管增强时，仅在服务端配置 `RAG_DASHSCOPE_API_KEY`、`RAG_EMBEDDING_*`、`RAG_QDRANT_*` 与 `RAG_RERANK_*`；浏览器不接触这些凭证。
+- 当前默认模型为 `qwen3.7-text-embedding`（1024 维）和 `qwen3-rerank`；远程异常自动回退本地检索，并在响应中保留状态与耗时摘要。
+- `DOCUMENT_PARSER_ENABLED=false` 时，文本型 PDF 仍可由内置解析器处理；扫描型 PDF 标记为 `needs_ocr`，启用阿里云文档解析前需安装可选 SDK 并配置 RAM 凭证。
+- 行为分析 XLSX 默认归入 `operations_analytics`，不进入游客问答；面向游客的 XLSX 需明确选择 `visitor_qa` 并经过同样的权限和版本校验。
 
 ### 修改正文
 
